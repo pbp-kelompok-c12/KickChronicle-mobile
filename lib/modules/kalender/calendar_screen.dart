@@ -6,8 +6,10 @@ import 'package:intl/intl.dart';
 import 'package:kick_chronicle/models/calendar_model.dart';
 import 'package:kick_chronicle/modules/kalender/add_schedule.dart'; 
 import 'package:kick_chronicle/modules/kalender/edit_schedule.dart'; 
-import 'package:kick_chronicle/modules/kalender/detail_schedule.dart'; // Import untuk Detail Schedule
-import 'package:kick_chronicle/modules/kalender/import_csv_schedule.dart'; // <--- BARU: Import untuk Import CSV
+import 'package:kick_chronicle/modules/kalender/detail_schedule.dart'; 
+import 'package:kick_chronicle/modules/kalender/import_csv_schedule.dart'; 
+import 'package:kick_chronicle/widgets/left_drawer.dart';
+import 'package:kick_chronicle/modules/kalender/schedule_app_bar.dart'; 
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -20,6 +22,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
   late DateTime _focusedDay;
   late DateTime _selectedDay;
   late Future<List<Match>> _futureMatches;
+
+  // Anda dapat membuat variabel base URL yang digunakan di semua tempat
+  // final String baseAddress = 'http://localhost:8000'; 
+  // Jika menggunakan Android Emulator, ubah menjadi 'http://10.0.2.2:8000'
 
   final String djangoFullApiUrl =
       'http://localhost:8000/kalender/api/get_matches/';
@@ -196,7 +202,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final bool isStaff = true; 
 
     return Scaffold(
-      appBar: AppBar(),
+      appBar: const ScheduleAppBar(),
+      drawer: const LeftDrawer(),
       body: ListView(
         padding: const EdgeInsets.only(top: 16),
         children: [
@@ -232,14 +239,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       _buildHeaderButton(
                         'Import CSV',
                         Icons.upload_file,
-                        () async { // <--- LOGIKA IMPORT CSV DISINI
+                        () async { 
                           final result = await Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (context) => const ImportCsvSchedulePage(),
                             ),
                           );
-                          // Refresh daftar match jika ImportCsvSchedulePage mengembalikan 'true'
                           if (result == true) {
                             setState(() {
                               _futureMatches = fetchMatches(request, _selectedDay);
@@ -285,7 +291,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     .map((match) => MatchCard(
                           match: match,
                           isStaff: isStaff,
-                          // KOREKSI ERROR: Menggunakan operator '!' pada match.id
                           onDelete: () => deleteMatch(request, match.id!), 
                           onEdit: () async {
                             final result = await Navigator.push(
@@ -296,7 +301,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                 ),
                               ),
                             );
-                            // Refresh daftar match jika EditSchedulePage mengembalikan 'true'
                             if (result == true) {
                               setState(() {
                                 _futureMatches = fetchMatches(request, _selectedDay);
@@ -329,19 +333,44 @@ class MatchCard extends StatelessWidget {
   });
 
   Widget _buildLogo(String? url) {
+    // Menentukan base URL secara dinamis berdasarkan platform
+    // KIsWeb (dari flutter/foundation.dart) harus diimpor di file ini jika ingin digunakan
+    // Karena tidak ada, kita akan menggunakan logic sederhana untuk menggabungkan dua alamat.
+    
+    // Perhatikan: Karena Anda tidak ingin ada if/else besar, 
+    // cara terbaik adalah menggunakan satu alamat yang didefinisikan di main.dart
+    // Saat ini, kita ambil base URL dari apiURL di _CalendarScreenState (yaitu localhost:8000)
+    
+    const String baseAddress = 'http://localhost:8000'; // Harus diganti 10.0.2.2 jika Android Emulator
+
     if (url != null && url.isNotEmpty) {
-      return Image.network(
-        url,
-        height: 30,
-        width: 30,
-        fit: BoxFit.contain,
-        errorBuilder: (c, o, s) => const Icon(Icons.shield_outlined,
-            size: 30, color: Colors.grey),
-      );
+        String fullUrl;
+        
+        if (url.startsWith('http')) {
+            fullUrl = url;
+        } else {
+            // Menggunakan alamat base yang ditentukan di atas
+            fullUrl = baseAddress + url; 
+        }
+
+        return Image.network(
+            fullUrl,
+            height: 30,
+            width: 30,
+            fit: BoxFit.contain,
+            errorBuilder: (c, o, s) => const Icon(
+                Icons.shield_outlined,
+                size: 30,
+                color: Colors.grey
+            ),
+        );
     }
-    return const Icon(Icons.shield_outlined,
-        size: 30, color: Colors.grey);
-  }
+    return const Icon(
+        Icons.shield_outlined,
+        size: 30,
+        color: Colors.grey
+    );
+}
 
   Widget _buildAdminButton(
       String text, Color color, VoidCallback onPressed) {
@@ -424,7 +453,6 @@ class MatchCard extends StatelessWidget {
       ),
       margin: EdgeInsets.zero,
       child: InkWell(
-        // Menambahkan navigasi ke halaman Detail Schedule
         onTap: () {
           Navigator.push(
             context,

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
-import 'package:flutter_localizations/flutter_localizations.dart'; 
 import 'package:kick_chronicle/modules/kalender/calendar_screen.dart'; 
 
 void main() {
@@ -21,17 +20,6 @@ class MyApp extends StatelessWidget {
       },
       child: MaterialApp(
         title: 'Kick Chronicle App',
-        
-        localizationsDelegates: const [
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: const [
-          Locale('en', ''), 
-          Locale('id', ''), 
-        ],
-
         theme: ThemeData(
           brightness: Brightness.dark, 
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple, brightness: Brightness.dark),
