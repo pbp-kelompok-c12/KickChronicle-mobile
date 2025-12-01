@@ -4,6 +4,10 @@ import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import 'package:kick_chronicle/models/calendar_model.dart';
+import 'package:kick_chronicle/modules/kalender/add_schedule.dart'; 
+import 'package:kick_chronicle/modules/kalender/edit_schedule.dart'; 
+import 'package:kick_chronicle/modules/kalender/detail_schedule.dart'; // Import untuk Detail Schedule
+import 'package:kick_chronicle/modules/kalender/import_csv_schedule.dart'; // <--- BARU: Import untuk Import CSV
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -43,6 +47,42 @@ class _CalendarScreenState extends State<CalendarScreen> {
     }
   }
 
+  Future<void> deleteMatch(CookieRequest request, int matchId) async {
+    bool confirmed = await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Konfirmasi Hapus'),
+        content: Text('Apakah Anda yakin ingin menghapus Match ID $matchId?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Hapus')),
+        ],
+      ),
+    ) ?? false;
+
+    if (!confirmed) return;
+
+    final response = await request.post(
+      'http://localhost:8000/kalender/api/delete_match/$matchId/',
+      {},
+    );
+
+    if (mounted) {
+      if (response['status'] == 'success') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Jadwal berhasil dihapus.')),
+        );
+        setState(() {
+          _futureMatches = fetchMatches(request, _selectedDay);
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(response['message'] ?? 'Gagal menghapus jadwal.')),
+        );
+      }
+    }
+  }
+
   void _onDaySelected(DateTime selectedDay, DateTime focusedDay) {
     if (!isSameDay(_selectedDay, selectedDay)) {
       setState(() {
@@ -66,11 +106,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 900), 
+        constraints: const BoxConstraints(maxWidth: 700),
         child: Container(
           height: 60,
           decoration: BoxDecoration(
-            color: Colors.grey[900],
+            color: Colors.grey[850],
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: Colors.white12),
           ),
@@ -105,7 +145,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         );
                       },
                     );
-
                     if (pickedDate != null) {
                       _onDaySelected(pickedDate, pickedDate);
                     }
@@ -134,17 +173,19 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-
-  Widget _buildHeaderButton(
-      String text, IconData icon, VoidCallback onPressed) {
+  Widget _buildHeaderButton(String text, IconData icon, VoidCallback onPressed) {
     return TextButton.icon(
       icon: Icon(icon, color: Colors.white, size: 18),
-      label: Text(text,
-          style: const TextStyle(color: Colors.white, fontSize: 14)),
+      label: Text(text, style: const TextStyle(color: Colors.white, fontSize: 14)),
       onPressed: onPressed,
       style: TextButton.styleFrom(
-        backgroundColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: const BorderSide(color: Colors.white38),
+        ),
       ),
     );
   }
@@ -152,57 +193,120 @@ class _CalendarScreenState extends State<CalendarScreen> {
   @override
   Widget build(BuildContext context) {
     final request = context.watch<CookieRequest>();
-    final bool isStaff = true; // FOR TESTING ONLY
+    final bool isStaff = true; 
 
     return Scaffold(
-      appBar: AppBar(
-        actions: [
-          if (isStaff)
-            Row(
-              children: [
-                _buildHeaderButton('Add Schedule', Icons.add, () {}),
-                _buildHeaderButton('Import CSV', Icons.upload_file, () {}),
-              ],
-            ),
-        ],
-      ),
-      body: Column(
-        children: <Widget>[
+      appBar: AppBar(),
+      body: ListView(
+        padding: const EdgeInsets.only(top: 16),
+        children: [
           _buildDateHeader(),
-          Expanded(
-            child: FutureBuilder<List<Match>>(
-              future: _futureMatches,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState ==
-                    ConnectionState.waiting) {
-                  return const Center(
-                      child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return Center(
-                      child: Text('Error: ${snapshot.error}.'));
-                }
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return Center(
+          const SizedBox(height: 6),
+          if (isStaff)
+            Padding(
+              padding: const EdgeInsets.only(top: 12.0, bottom: 12.0),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 700),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildHeaderButton(
+                        'Add Schedule',
+                        Icons.add,
+                        () async {
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AddSchedulePage(),
+                            ),
+                          );
+                          if (result == true) {
+                            setState(() {
+                              _futureMatches = fetchMatches(request, _selectedDay);
+                            });
+                          }
+                        },
+                      ),
+                      const SizedBox(width: 12),
+                      _buildHeaderButton(
+                        'Import CSV',
+                        Icons.upload_file,
+                        () async { // <--- LOGIKA IMPORT CSV DISINI
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ImportCsvSchedulePage(),
+                            ),
+                          );
+                          // Refresh daftar match jika ImportCsvSchedulePage mengembalikan 'true'
+                          if (result == true) {
+                            setState(() {
+                              _futureMatches = fetchMatches(request, _selectedDay);
+                            });
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          FutureBuilder<List<Match>>(
+            future: _futureMatches,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Padding(
+                  padding: EdgeInsets.only(top: 40),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+              if (snapshot.hasError) {
+                return Padding(
+                  padding: const EdgeInsets.only(top: 40),
+                  child: Center(child: Text('Error: ${snapshot.error}.')),
+                );
+              }
+              if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.only(top: 40),
+                  child: Center(
                     child: Text(
                       'There are no matches scheduled for this date',
-                      style: const TextStyle(color: Colors.grey),
+                      style: TextStyle(color: Colors.grey),
                     ),
-                  );
-                }
-
-                final List<Match> matches = snapshot.data!;
-
-                return ListView.builder(
-                  itemCount: matches.length,
-                  itemBuilder: (context, index) {
-                    final match = matches[index];
-                    return MatchCard(
-                        match: match, isStaff: isStaff);
-                  },
+                  ),
                 );
-              },
-            ),
+              }
+
+              final matches = snapshot.data!;
+              return Column(
+                children: matches
+                    .map((match) => MatchCard(
+                          match: match,
+                          isStaff: isStaff,
+                          // KOREKSI ERROR: Menggunakan operator '!' pada match.id
+                          onDelete: () => deleteMatch(request, match.id!), 
+                          onEdit: () async {
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => EditSchedulePage(
+                                  matchToEdit: match,
+                                ),
+                              ),
+                            );
+                            // Refresh daftar match jika EditSchedulePage mengembalikan 'true'
+                            if (result == true) {
+                              setState(() {
+                                _futureMatches = fetchMatches(request, _selectedDay);
+                              });
+                            }
+                          },
+                        ))
+                    .toList(),
+              );
+            },
           ),
         ],
       ),
@@ -213,11 +317,15 @@ class _CalendarScreenState extends State<CalendarScreen> {
 class MatchCard extends StatelessWidget {
   final Match match;
   final bool isStaff;
+  final VoidCallback? onDelete;
+  final VoidCallback? onEdit;
 
   const MatchCard({
     super.key,
     required this.match,
     required this.isStaff,
+    this.onDelete,
+    this.onEdit,
   });
 
   Widget _buildLogo(String? url) {
@@ -316,7 +424,15 @@ class MatchCard extends StatelessWidget {
       ),
       margin: EdgeInsets.zero,
       child: InkWell(
-        onTap: () {},
+        // Menambahkan navigasi ke halaman Detail Schedule
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => DetailSchedulePage(match: match),
+            ),
+          );
+        },
         child: cardContent,
       ),
     );
@@ -326,15 +442,15 @@ class MatchCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 8.0),
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 900), 
+            constraints: const BoxConstraints(maxWidth: 700),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                _buildAdminButton('Edit', Colors.white, () {}),
+                _buildAdminButton('Edit', Colors.white, onEdit ?? () {}), 
                 const SizedBox(width: 12),
                 Expanded(child: mainWidget),
                 const SizedBox(width: 12),
-                _buildAdminButton('Delete', Colors.white, () {}),
+                _buildAdminButton('Delete', Colors.white, onDelete ?? () {}),
               ],
             ),
           ),
@@ -345,7 +461,7 @@ class MatchCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 8.0),
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 600), 
+            constraints: const BoxConstraints(maxWidth: 700),
             child: mainWidget,
           ),
         ),
