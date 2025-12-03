@@ -9,7 +9,6 @@ List<Match> matchFromJson(dynamic data, DateTime selectedDate) {
   return [];
 }
 
-
 class Match {
   final int? id;
   final String team1;
@@ -37,12 +36,17 @@ class Match {
 
     final String dateTimeString = '$dateString ${json['start_time']}';
 
+    String fixLogoPath(String? path) {
+      if (path == null || path.isEmpty) return "";
+      return path.replaceFirst("/static/images/", "assets/images/");
+    }
+
     return Match(
       id: json['id'] as int?,
       team1: json['team_1'] as String,
-      team1Logo: json['team_1_logo'] as String?,
+      team1Logo: fixLogoPath(json['team_1_logo'] as String?),
       team2: json['team_2'] as String,
-      team2Logo: json['team_2_logo'] as String?,
+      team2Logo: fixLogoPath(json['team_2_logo'] as String?),
       date: DateTime.parse(dateTimeString),
       description: json['description'] as String?,
     );

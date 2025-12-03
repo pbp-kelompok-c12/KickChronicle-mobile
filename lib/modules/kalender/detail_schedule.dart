@@ -9,7 +9,6 @@ class DetailSchedulePage extends StatelessWidget {
   final String icsBaseUrl = 'http://localhost:8000/kalender/export/';
 
   Future<void> _exportIcs(BuildContext context) async {
-    // Pastikan match.id tidak null
     if (match.id == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Error: ID jadwal tidak ditemukan.')),

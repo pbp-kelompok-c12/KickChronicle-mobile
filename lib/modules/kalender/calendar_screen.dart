@@ -10,6 +10,12 @@ import 'package:kick_chronicle/modules/kalender/detail_schedule.dart';
 import 'package:kick_chronicle/modules/kalender/import_csv_schedule.dart'; 
 import 'package:kick_chronicle/widgets/left_drawer.dart';
 import 'package:kick_chronicle/modules/kalender/schedule_app_bar.dart'; 
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform;
+
+final String baseHost = kIsWeb || defaultTargetPlatform == TargetPlatform.iOS
+    ? "http://localhost:8000"
+    : "http://10.0.2.2:8000";
+
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -23,12 +29,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   late DateTime _selectedDay;
   late Future<List<Match>> _futureMatches;
 
-  // Anda dapat membuat variabel base URL yang digunakan di semua tempat
-  // final String baseAddress = 'http://localhost:8000'; 
-  // Jika menggunakan Android Emulator, ubah menjadi 'http://10.0.2.2:8000'
-
-  final String djangoFullApiUrl =
-      'http://localhost:8000/kalender/api/get_matches/';
+  final String djangoFullApiUrl = baseHost + '/kalender/api/get_matches/';
 
   @override
   void initState() {
@@ -43,7 +44,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   Future<List<Match>> fetchMatches(
       CookieRequest request, DateTime date) async {
     final String dateStr = DateFormat('yyyy-MM-dd').format(date);
-    final url = '$djangoFullApiUrl?date=$dateStr';
+    final url = '$djangoFullApiUrl?date=$dateStr'; 
 
     try {
       final rawResponse = await request.get(url);
@@ -69,7 +70,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     if (!confirmed) return;
 
     final response = await request.post(
-      'http://localhost:8000/kalender/api/delete_match/$matchId/',
+      baseHost + '/kalender/api/delete_match/$matchId/',
       {},
     );
 
@@ -333,26 +334,29 @@ class MatchCard extends StatelessWidget {
   });
 
   Widget _buildLogo(String? url) {
-    // Menentukan base URL secara dinamis berdasarkan platform
-    // KIsWeb (dari flutter/foundation.dart) harus diimpor di file ini jika ingin digunakan
-    // Karena tidak ada, kita akan menggunakan logic sederhana untuk menggabungkan dua alamat.
-    
-    // Perhatikan: Karena Anda tidak ingin ada if/else besar, 
-    // cara terbaik adalah menggunakan satu alamat yang didefinisikan di main.dart
-    // Saat ini, kita ambil base URL dari apiURL di _CalendarScreenState (yaitu localhost:8000)
-    
-    const String baseAddress = 'http://localhost:8000'; // Harus diganti 10.0.2.2 jika Android Emulator
-
     if (url != null && url.isNotEmpty) {
-        String fullUrl;
         
-        if (url.startsWith('http')) {
-            fullUrl = url;
-        } else {
-            // Menggunakan alamat base yang ditentukan di atas
-            fullUrl = baseAddress + url; 
+        // --- PERBAIKAN LOGIKA PEMUATAN LOGO ---
+        // Logika ini memprioritaskan aset lokal yang sudah di-fix di model
+        
+        if (url.startsWith('assets')) {
+            // 1. Path dari model: assets/images/... -> Image.asset
+            return Image.asset(
+                url,
+                height: 30,
+                width: 30,
+                fit: BoxFit.contain,
+                errorBuilder: (c, o, s) => const Icon(
+                    Icons.shield_outlined,
+                    size: 30,
+                    color: Colors.grey
+                ),
+            );
         }
-
+        
+        // 2. Fallback: Muat sebagai Image.network (Jika model tidak mengembalikan path asset)
+        String fullUrl = url.startsWith('http') ? url : baseHost + url;
+        
         return Image.network(
             fullUrl,
             height: 30,
