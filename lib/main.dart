@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:pbp_django_auth/pbp_django_auth.dart';
+import 'package:provider/provider.dart';
+import 'package:kick_chronicle/modules/auth_profil/screens/login_page.dart'; // Sesuaikan import nanti
 import 'package:kick_chronicle/modules/highlight/screens/home_page_highlight.dart';
 import 'package:kick_chronicle/app_theme.dart';
 import 'package:provider/provider.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 
 void main() {
-  runApp(const KickChronicleApp());
+  runApp(const MyApp());
 }
 
-class KickChronicleApp extends StatelessWidget {
-  const KickChronicleApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -19,10 +22,12 @@ class KickChronicleApp extends StatelessWidget {
         return request;
       },
       child: MaterialApp(
-        title: 'Kick Chronicle',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.darkTheme,
-        home: const HomePageHighlight(),
+        title: 'KickChronicle',
+        theme: ThemeData(
+          useMaterial3: true,
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
+        ),
+        home: const LoginPage(),
       ),
     );
   }
