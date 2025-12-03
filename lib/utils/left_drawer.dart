@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:kick_chronicle/modules/highlight/screens/home_page_highlight.dart';
 
 class LeftDrawer extends StatelessWidget {
   final int selectedIndex;
   final Function(int) onItemTapped;
+  final bool isAdmin; // NEW: Receive admin status
+  final Function(bool) onAdminChanged; // NEW: Callback to toggle admin status
 
   const LeftDrawer({
     super.key,
     required this.selectedIndex,
     required this.onItemTapped,
+    required this.isAdmin,
+    required this.onAdminChanged,
   });
 
   @override
@@ -20,7 +23,6 @@ class LeftDrawer extends StatelessWidget {
       backgroundColor: const Color(0xFF111827),
       child: Column(
         children: [
-          // Drawer Header
           Container(
             padding: const EdgeInsets.fromLTRB(20, 60, 20, 20),
             decoration: const BoxDecoration(
@@ -63,81 +65,41 @@ class LeftDrawer extends StatelessWidget {
             ),
           ),
 
-          // Navigation Items
           Expanded(
             child: ListView(
               padding: EdgeInsets.zero,
               children: [
-                _buildDrawerItem(
-                    0,
-                    Icons.play_circle_fill,
-                    'Highlights',
-                        () {
-                      // Routing Template:
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => const HomePageHighlight())
-                    );
-                      onItemTapped(0);
-                    }
-                ),
-                _buildDrawerItem(
-                    1,
-                    Icons.calendar_today,
-                    'Schedule',
-                        () {
-                      /*
-                    // Routing Template:
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const SchedulePage())
-                    );
-                    */
-                      onItemTapped(1);
-                    }
-                ),
-                _buildDrawerItem(
-                    2,
-                    Icons.star,
-                    'Top Rated',
-                        () {
-                      /*
-                    // Routing Template:
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const TopRatedPage())
-                    );
-                    */
-                      onItemTapped(2);
-                    }
-                ),
-                _buildDrawerItem(
-                    3,
-                    Icons.group,
-                    'Team',
-                        () {
-                      /*
-                    // Routing Template:
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const TeamPage())
-                    );
-                    */
-                      onItemTapped(3);
-                    }
+                _buildDrawerItem(0, Icons.play_circle_fill, 'Highlights', () => onItemTapped(0)),
+                _buildDrawerItem(1, Icons.calendar_today, 'Schedule', () => onItemTapped(1)),
+                _buildDrawerItem(2, Icons.star, 'Top Rated', () => onItemTapped(2)),
+                _buildDrawerItem(3, Icons.group, 'Team', () => onItemTapped(3)),
+
+                const Divider(color: Color(0xFF374151)),
+
+                // NEW: Admin Simulation Toggle
+                SwitchListTile(
+                  title: const Text("Simulate Admin", style: TextStyle(color: Colors.white)),
+                  secondary: Icon(
+                      isAdmin ? Icons.admin_panel_settings : Icons.person_outline,
+                      color: isAdmin ? const Color(0xFF4F46E5) : Colors.grey
+                  ),
+                  value: isAdmin,
+                  activeColor: const Color(0xFF4F46E5),
+                  onChanged: (bool value) {
+                    onAdminChanged(value); // Trigger callback
+                  },
                 ),
               ],
             ),
           ),
 
-          // // Footer / Version info
-          // Padding(
-          //   padding: const EdgeInsets.all(20.0),
-          //   child: Text(
-          //     "Version 1.0.0",
-          //     style: TextStyle(color: Colors.grey[600], fontSize: 12),
-          //   ),
-          // ),
+          Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Text(
+              "Version 1.0.0\nRole: ${isAdmin ? 'Admin' : 'User'}",
+              style: TextStyle(color: Colors.grey[600], fontSize: 12),
+            ),
+          ),
         ],
       ),
     );

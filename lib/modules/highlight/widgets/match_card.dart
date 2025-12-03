@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kick_chronicle/models/highlight.dart';
+import 'package:kick_chronicle/modules/highlight/screens/highlight_detail_page.dart';
 
 class MatchCard extends StatelessWidget {
   final Highlight highlight;
@@ -64,185 +65,187 @@ class MatchCard extends StatelessWidget {
       backgroundImageUrl = _getYouTubeThumbnail(highlight.url);
     }
 
-    return Container(
-      // CHANGED: Removed margin because the Grid handles spacing now
-      decoration: BoxDecoration(
-        color: const Color(0xFF111827),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF374151), width: 0.5),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Graphic Area
-          AspectRatio(
-            aspectRatio: 16 / 9,
-            child: Container(
-              color: Color(colorCode),
-              child: Stack(
-                children: [
-                  if (backgroundImageUrl != null)
-                    Positioned.fill(
-                      child: Image.network(
-                        backgroundImageUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (ctx, err, stack) => const SizedBox(),
-                      ),
-                    ),
-                  if (backgroundImageUrl == null)
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Center(
-                            child: Icon(Icons.shield,
-                                size: 40, color: Colors.white.withOpacity(0.8)),
-                          ),
-                        ),
-                        Container(
-                          width: 100,
-                          color: Colors.white.withOpacity(0.95),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              if (hasScore) ...[
-                                Text(
-                                  details["score1"]!,
-                                  style: TextStyle(
-                                    color: Color(colorCode),
-                                    fontSize: 40,
-                                    fontWeight: FontWeight.w900,
-                                    height: 1,
-                                  ),
-                                ),
-                                Container(
-                                    height: 2, width: 20, color: Colors.grey[400]),
-                                Text(
-                                  details["score2"]!,
-                                  style: TextStyle(
-                                    color: Color(colorCode),
-                                    fontSize: 40,
-                                    fontWeight: FontWeight.w900,
-                                    height: 1,
-                                  ),
-                                ),
-                              ] else ...[
-                                Text(
-                                  "VS",
-                                  style: TextStyle(
-                                    color: Color(colorCode),
-                                    fontSize: 30,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                              ]
-                            ],
-                          ),
-                        ),
-                        Expanded(
-                          child: Center(
-                            child: Icon(Icons.shield_outlined,
-                                size: 40, color: Colors.white),
-                          ),
-                        ),
-                      ],
-                    ),
-                  Positioned(
-                    right: 0,
-                    top: 20,
-                    bottom: 20,
-                    child: RotatedBox(
-                      quarterTurns: 3,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        color: Colors.black.withOpacity(0.6),
-                        child: const Text(
-                          "HIGHLIGHTS",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 2,
-                            fontSize: 10,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => HighlightDetailPage(highlight: highlight),
           ),
-
-          // Details Section
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center, // Vertically center content if there's leftover space
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF4F46E5),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          "SEASON $seasonLabel",
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.5,
-                          ),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF111827),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFF374151), width: 0.5),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.max, // FIX: Fill available height
+          children: [
+            // 1. Graphic Area (Fixed Aspect Ratio 16:9)
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: Container(
+                color: Color(colorCode),
+                child: Stack(
+                  children: [
+                    if (backgroundImageUrl != null)
+                      Positioned.fill(
+                        child: Image.network(
+                          backgroundImageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (ctx, err, stack) => const SizedBox(),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      if (highlight.description.length < 20)
-                        Expanded(
-                          child: Text(
-                            highlight.description.toUpperCase(),
-                            style: TextStyle(
-                              color: Colors.grey[500],
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.5,
+                    if (backgroundImageUrl == null)
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Center(
+                              child: Icon(Icons.shield,
+                                  size: 40, color: Colors.white.withOpacity(0.8)),
                             ),
-                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Container(
+                            width: 100,
+                            color: Colors.white.withOpacity(0.95),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                if (hasScore) ...[
+                                  Text(
+                                    details["score1"]!,
+                                    style: TextStyle(
+                                      color: Color(colorCode),
+                                      fontSize: 40,
+                                      fontWeight: FontWeight.w900,
+                                      height: 1,
+                                    ),
+                                  ),
+                                  Container(
+                                      height: 2, width: 20, color: Colors.grey[400]),
+                                  Text(
+                                    details["score2"]!,
+                                    style: TextStyle(
+                                      color: Color(colorCode),
+                                      fontSize: 40,
+                                      fontWeight: FontWeight.w900,
+                                      height: 1,
+                                    ),
+                                  ),
+                                ] else ...[
+                                  Text(
+                                    "VS",
+                                    style: TextStyle(
+                                      color: Color(colorCode),
+                                      fontSize: 30,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ]
+                              ],
+                            ),
+                          ),
+                          Expanded(
+                            child: Center(
+                              child: Icon(Icons.shield_outlined,
+                                  size: 40, color: Colors.white),
+                            ),
+                          ),
+                        ],
+                      ),
+                    Positioned(
+                      right: 0,
+                      top: 20,
+                      bottom: 20,
+                      child: RotatedBox(
+                        quarterTurns: 3,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          color: Colors.black.withOpacity(0.6),
+                          child: const Text(
+                            "HIGHLIGHTS",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 2,
+                              fontSize: 10,
+                            ),
                           ),
                         ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    highlight.name,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      height: 1.2,
+                      ),
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    highlight.description,
-                    style: TextStyle(
-                      color: Colors.grey[400],
-                      fontSize: 12,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+
+            // 2. Details Section (Responsive)
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    // Season Tag
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF4F46E5),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        "SEASON $seasonLabel",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+
+                    // Title
+                    Text(
+                      highlight.name,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        height: 1.1,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+
+                    const SizedBox(height: 4),
+
+                    // FIX: Description fills remaining space
+                    Expanded(
+                      child: Text(
+                        highlight.description,
+                        style: TextStyle(
+                          color: Colors.grey[400],
+                          fontSize: 11,
+                          height: 1.2,
+                        ),
+                        overflow: TextOverflow.fade, // Use fade or ellipsis
+                        // Removed maxLines to allow filling the expanded space if needed,
+                        // or set a reasonable limit if overflow is still an issue.
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

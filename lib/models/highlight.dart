@@ -1,8 +1,7 @@
 import 'dart:convert';
+import 'package:kick_chronicle/modules/highlight/team_standings.dart'; // Import the new model
 
 List<Highlight> highlightFromJson(String str) => List<Highlight>.from(json.decode(str).map((x) => Highlight.fromJson(x)));
-
-String highlightToJson(List<Highlight> data) => json.encode(List<dynamic>.from(data.map((x) => x.toJson())));
 
 class Highlight {
   String id;
@@ -12,6 +11,8 @@ class Highlight {
   String description;
   DateTime createdAt;
   Season season;
+  TeamStanding? homeStanding;
+  TeamStanding? awayStanding;
 
   Highlight({
     required this.id,
@@ -21,27 +22,25 @@ class Highlight {
     required this.description,
     required this.createdAt,
     required this.season,
+    this.homeStanding,
+    this.awayStanding,
   });
 
   factory Highlight.fromJson(Map<String, dynamic> json) => Highlight(
-    id: json["id"],
+    id: json["id"].toString(), // Ensure string
     name: json["name"],
     url: json["url"],
     manualThumbnailUrl: json["manual_thumbnail_url"],
     description: json["description"],
     createdAt: DateTime.parse(json["created_at"]),
-    season: seasonValues.map[json["season"]]!,
+    season: seasonValues.map[json["season"]] ?? Season.THE_2425,
+    homeStanding: json["home_standing"] != null
+        ? TeamStanding.fromJson(json["home_standing"])
+        : null,
+    awayStanding: json["away_standing"] != null
+        ? TeamStanding.fromJson(json["away_standing"])
+        : null,
   );
-
-  Map<String, dynamic> toJson() => {
-    "id": id,
-    "name": name,
-    "url": url,
-    "manual_thumbnail_url": manualThumbnailUrl,
-    "description": description,
-    "created_at": createdAt.toIso8601String(),
-    "season": seasonValues.reverse[season],
-  };
 }
 
 enum Season {
