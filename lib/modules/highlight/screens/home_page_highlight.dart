@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:kick_chronicle/models/highlight.dart';
 import 'package:kick_chronicle/services/highlight_service.dart';
 import 'package:kick_chronicle/modules/highlight/widgets/match_card.dart';
-import 'package:kick_chronicle/utils/left_drawer.dart';
+import 'package:kick_chronicle/widgets/left_drawer.dart';
 import 'package:provider/provider.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:kick_chronicle/modules/highlight/screens/edit_highlight_page.dart';
 import 'package:kick_chronicle/modules/highlight/screens/add_highlight_page.dart';
 import 'package:kick_chronicle/modules/highlight/screens/import_highlight_page.dart';
 import 'package:kick_chronicle/modules/highlight/screens/admin_highlight_page.dart';
+import 'package:kick_chronicle/modules/auth_profil/screens/login_page.dart';
 
 class HomePageHighlight extends StatefulWidget {
   const HomePageHighlight({super.key});
@@ -18,7 +20,6 @@ class HomePageHighlight extends StatefulWidget {
 }
 
 class _HomePageHighlightState extends State<HomePageHighlight> {
-  int _selectedIndex = 0;
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
   List<Highlight> _highlights = [];
@@ -29,13 +30,14 @@ class _HomePageHighlightState extends State<HomePageHighlight> {
   String _currentQuery = "";
   static const int _pageSize = 5;
 
-  // State to simulate admin login
+  // Real Admin State
   bool _isAdmin = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAdminStatus(); // Check role first
       _fetchPage();
     });
     _scrollController.addListener(() {
@@ -51,6 +53,77 @@ class _HomePageHighlightState extends State<HomePageHighlight> {
     _scrollController.dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  // --- NEW: Check Admin Status from Backend ---
+  Future<void> _checkAdminStatus() async {
+    final request = context.read<CookieRequest>();
+    // You need an endpoint in Django that returns {"is_superuser": true/false}
+    // Example: http://127.0.0.1:8000/auth/check-admin/
+    // If you don't have one, you might need to rely on login response data stored locally.
+    // For now, I'll assume a hypothetical endpoint or check against a known property if your auth package supports it.
+
+    // NOTE: Replace this URL with your actual endpoint to check user role
+    // If you haven't built this endpoint yet, you need to add it to your Django views.
+    String url = kIsWeb ? "http://127.0.0.1:8000/auth/check-superuser/" : "http://10.0.2.2:8000/auth/check-superuser/";
+
+    try {
+      // Trying to fetch user info.
+      // If this endpoint doesn't exist yet, this block will fail silently or log error.
+      final response = await request.get(url);
+      if (response != null && response['status'] == true) {
+        setState(() {
+          _isAdmin = response['is_superuser'] ?? false;
+        });
+      }
+    } catch (e) {
+      // Fallback or ignore if endpoint doesn't exist yet
+      print("Could not verify admin status: $e");
+    }
+  }
+
+  // --- LOGOUT LOGIC ---
+  Future<void> _handleLogout(BuildContext context, CookieRequest request) async {
+    String baseUrl = kIsWeb ? "http://127.0.0.1:8000" : "http://10.0.2.2:8000";
+    String logoutUrl = "$baseUrl/auth/mobile/logout/";
+
+    try {
+      final response = await request.logout(logoutUrl);
+
+      if (context.mounted) {
+        if (response['status']) {
+          String uname = response['username'] ?? "User";
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Sampai jumpa, $uname!"),
+              backgroundColor: Colors.green,
+            ),
+          );
+
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const LoginPage()),
+                (route) => false,
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(response['message']),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Error logout: $e"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _performSearch() {
@@ -109,7 +182,7 @@ class _HomePageHighlightState extends State<HomePageHighlight> {
 
   Future<void> _deleteHighlight(Highlight highlight) async {
     final request = context.read<CookieRequest>();
-    final url = 'http://10.0.2.2:8000/delete-highlight-flutter/${highlight.id}/';
+    final url = 'http://127.0.0.1:8000/delete-highlight-flutter/${highlight.id}/';
     try {
       final response = await request.post(url, {});
       if (response['status'] == 'success') {
@@ -156,12 +229,8 @@ class _HomePageHighlightState extends State<HomePageHighlight> {
     );
   }
 
-  void _onDrawerItemTapped(int index) {
-    setState(() { _selectedIndex = index; });
-    if (Navigator.canPop(context)) { Navigator.pop(context); }
-  }
 
-  // UPDATED: Dynamic Aspect Ratio Calculation
+  // Calculate Aspect Ratio
   double _getCardAspectRatio(BuildContext context) {
     final double width = MediaQuery.of(context).size.width;
 
@@ -189,32 +258,52 @@ class _HomePageHighlightState extends State<HomePageHighlight> {
       }
     }
   }
-
   @override
   Widget build(BuildContext context) {
+    final request = context.watch<CookieRequest>();
+
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
         titleSpacing: 0,
-        title: Padding(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        // EDIT: Only show the logo and text if NOT an admin
+        title: _isAdmin
+            ? null
+            : Padding(
           padding: const EdgeInsets.only(left: 16.0),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                height: 32,
-                width: 32,
+                height: 40,
+                width: 40,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  gradient: const LinearGradient(colors: [Color(0xFFF06292), Color(0xFFFF8A65)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                  borderRadius: BorderRadius.circular(10),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFA855F7), Color(0xFFEC4899)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                 ),
-                child: const Center(child: Text("KC", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 14))),
+                child: const Center(
+                    child: Text("KC",
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            fontSize: 18))),
               ),
               const SizedBox(width: 12),
               const Flexible(
                 fit: FlexFit.loose,
                 child: Text(
                   "Kick Chronicle",
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18, letterSpacing: -0.5),
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                      color: Colors.white),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -222,6 +311,7 @@ class _HomePageHighlightState extends State<HomePageHighlight> {
           ),
         ),
         actions: [
+          // REAL ADMIN CHECK
           if (_isAdmin) ...[
             IconButton(
               icon: const Icon(Icons.admin_panel_settings_outlined, color: Colors.white),
@@ -260,24 +350,51 @@ class _HomePageHighlightState extends State<HomePageHighlight> {
 
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
-            child: CircleAvatar(
-              radius: 16,
-              backgroundColor: const Color(0xFF4F46E5),
-              child: Icon(_isAdmin ? Icons.admin_panel_settings : Icons.person, size: 18, color: Colors.white),
+            child: PopupMenuButton<String>(
+              offset: const Offset(0, 50),
+              color: const Color(0xFF1F2937),
+              icon: CircleAvatar(
+                radius: 16,
+                backgroundColor: const Color(0xFF2C3246),
+                child: Icon(_isAdmin ? Icons.admin_panel_settings : Icons.person, size: 20, color: Colors.white),
+              ),
+              itemBuilder: (context) => <PopupMenuEntry<String>>[
+                const PopupMenuItem<String>(
+                  value: 'profile',
+                  child: Row(
+                    children: [
+                      Icon(Icons.person_outline, color: Colors.white),
+                      SizedBox(width: 8),
+                      Text("My Profile", style: TextStyle(color: Colors.white)),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(height: 1),
+                const PopupMenuItem<String>(
+                  value: 'logout',
+                  child: Row(
+                    children: [
+                      Icon(Icons.logout, color: Colors.red),
+                      SizedBox(width: 8),
+                      Text("Logout", style: TextStyle(color: Colors.red)),
+                    ],
+                  ),
+                ),
+              ],
+              onSelected: (value) {
+                if (value == 'logout') {
+                  _handleLogout(context, request);
+                } else if (value == 'profile') {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Menuju Halaman Profil...")),
+                  );
+                }
+              },
             ),
           ),
         ],
       ),
-      drawer: LeftDrawer(
-        selectedIndex: _selectedIndex,
-        onItemTapped: _onDrawerItemTapped,
-        isAdmin: _isAdmin,
-        onAdminChanged: (bool value) {
-          setState(() {
-            _isAdmin = value;
-          });
-        },
-      ),
+      drawer: LeftDrawer(),
       body: Column(
         children: [
           Padding(
@@ -287,7 +404,10 @@ class _HomePageHighlightState extends State<HomePageHighlight> {
                 Expanded(
                   child: Container(
                     height: 50,
-                    decoration: BoxDecoration(color: const Color(0xFF1F2937), borderRadius: BorderRadius.circular(8)),
+                    decoration: BoxDecoration(
+                        color: const Color(0xFF1F2937),
+                        borderRadius: BorderRadius.circular(8)
+                    ),
                     child: TextField(
                       controller: _searchController,
                       onSubmitted: (_) => _performSearch(),
@@ -308,8 +428,16 @@ class _HomePageHighlightState extends State<HomePageHighlight> {
                   child: Container(
                     height: 50,
                     padding: const EdgeInsets.symmetric(horizontal: 20),
-                    decoration: BoxDecoration(color: const Color(0xFF374151), borderRadius: BorderRadius.circular(8)),
-                    child: const Center(child: Text("Search", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white))),
+                    decoration: BoxDecoration(
+                        color: const Color(0xFF374151),
+                        borderRadius: BorderRadius.circular(8)
+                    ),
+                    child: const Center(
+                        child: Text(
+                            "Search",
+                            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)
+                        )
+                    ),
                   ),
                 ),
               ],
@@ -353,7 +481,6 @@ class _HomePageHighlightState extends State<HomePageHighlight> {
                       sliver: SliverGrid(
                         gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                           maxCrossAxisExtent: 400,
-                          // UPDATED: Using dynamic calculation function
                           childAspectRatio: _getCardAspectRatio(context),
                           crossAxisSpacing: 16,
                           mainAxisSpacing: 8,
@@ -366,7 +493,7 @@ class _HomePageHighlightState extends State<HomePageHighlight> {
                               children: [
                                 Expanded(child: MatchCard(highlight: highlight)),
 
-                                // Conditional Buttons for Admin
+                                // CONDITIONAL RENDER: Edit/Delete buttons only if _isAdmin is true
                                 if (_isAdmin)
                                   Padding(
                                     padding: const EdgeInsets.only(top: 8.0),
@@ -391,7 +518,6 @@ class _HomePageHighlightState extends State<HomePageHighlight> {
                                             child: const Text("Edit", style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                                           ),
                                         ),
-                                        // UPDATED: Spacing reduced from 8 to 4
                                         const SizedBox(width: 4),
                                         Expanded(
                                           child: ElevatedButton(

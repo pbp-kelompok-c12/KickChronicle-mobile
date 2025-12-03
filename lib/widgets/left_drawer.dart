@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:kick_chronicle/screens/home_page.dart';
+import 'package:kick_chronicle/modules/highlight/screens/home_page_highlight.dart';
 // Import halaman-halaman lain nantinya di sini
 
 class LeftDrawer extends StatelessWidget {
@@ -42,8 +42,7 @@ class LeftDrawer extends StatelessWidget {
 
           // --- Menu Items ---
           _buildListTile(context, "Highlight", Icons.video_library, () {
-            // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HighlightPage()));
-            Navigator.pop(context); // Tutup drawer sementara
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomePageHighlight()));
           }),
           _buildListTile(context, "Schedule", Icons.calendar_today, () {
             Navigator.pop(context);
