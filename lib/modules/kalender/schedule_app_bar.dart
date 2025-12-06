@@ -26,7 +26,7 @@ class ScheduleAppBar extends StatelessWidget implements PreferredSizeWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text("Sampai jumpa, $uname!"),
-              backgroundColor: Colors.green,
+              backgroundColor: Colors.black,
             ),
           );
 
@@ -87,49 +87,14 @@ class ScheduleAppBar extends StatelessWidget implements PreferredSizeWidget {
       backgroundColor: Colors.black,
       foregroundColor: Colors.white,
       elevation: 0,
-      title: Row(
-        children: [
-          Container(
-            height: 40,
-            width: 40,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFA855F7), Color(0xFFEC4899)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Center(
-              child: Text(
-                "KC",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          const Text(
-            "Kick Chronicle",
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 20,
-              color: Colors.white,
-            ),
-          ),
-
-          const SizedBox(width: 40),
-          
-          if (isDesktop) ...[
-            _buildNavbarLink(context, "Highlight"),
-            _buildNavbarLink(context, "Schedule"),
-            _buildNavbarLink(context, "Top Rated"),
-            _buildNavbarLink(context, "Team"),
-          ],
-        ],
+      centerTitle: true, 
+      title: const Text(
+        "Kick Chronicle",
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 20,
+          color: Colors.white,
+        ),
       ),
 
       actions: [

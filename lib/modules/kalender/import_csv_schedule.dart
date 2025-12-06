@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:convert';
 import 'package:universal_io/io.dart';
+import 'package:provider/provider.dart'; 
+import 'package:pbp_django_auth/pbp_django_auth.dart'; 
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform;
 
 class ImportCsvSchedulePage extends StatefulWidget {
   const ImportCsvSchedulePage({super.key});
@@ -14,12 +17,16 @@ class _ImportCsvSchedulePageState extends State<ImportCsvSchedulePage> {
   String? _fileName;
   String? _csvContent;
 
+  final String baseHost = (kIsWeb || defaultTargetPlatform == TargetPlatform.iOS)
+      ? "http://127.0.0.1:8000"
+      : "http://10.0.2.2:8000";
+
   Future<void> _pickCsv() async {
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['csv'],
-        withData: true, // penting untuk web
+        withData: true, 
       );
 
       if (result == null) return;
@@ -28,11 +35,9 @@ class _ImportCsvSchedulePageState extends State<ImportCsvSchedulePage> {
         _fileName = result.files.single.name;
       });
 
-      // Platform: Web → bytes sudah tersedia
       if (result.files.single.bytes != null) {
         _csvContent = utf8.decode(result.files.single.bytes!);
       } 
-      // Platform: Android/Emulator → ambil path
       else if (result.files.single.path != null) {
         final file = File(result.files.single.path!);
         _csvContent = await file.readAsString();
@@ -49,7 +54,7 @@ class _ImportCsvSchedulePageState extends State<ImportCsvSchedulePage> {
     }
   }
 
-  void _importCsv() {
+  Future<void> _importCsv() async { 
     if (_csvContent == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Belum ada file CSV yang dipilih")),
@@ -57,21 +62,51 @@ class _ImportCsvSchedulePageState extends State<ImportCsvSchedulePage> {
       return;
     }
 
-    // Di sini kamu bisa parsing atau kirim ke Django melalui API
-    print("📄 CSV CONTENT:");
-    print(_csvContent);
+    final request = context.read<CookieRequest>();
+    final String importUrl = "$baseHost/kalender/api/import_flutter/"; 
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("CSV berhasil diproses")),
-    );
+    try {
+      final response = await request.post(
+          importUrl,
+          {'csv_content': _csvContent}, 
+      );
+
+      if (mounted) {
+          if (response['status'] == 'success') {
+              ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(response['message'] ?? "Impor jadwal berhasil!")),
+              );
+              Navigator.pop(context, true); 
+          } else {
+              String errorMsg = "Impor gagal. ";
+              if (response.containsKey('errors')) {
+                 errorMsg += "Detail Form: " + response['errors'].toString();
+              } else {
+                 errorMsg += response['message'] ?? "Kesalahan tak terduga dari server.";
+              }
+              ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(errorMsg)),
+              );
+          }
+      }
+
+    } catch (e) {
+        if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text("Kesalahan jaringan saat impor: $e")),
+            );
+        }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text('Import Schedule'),
-        backgroundColor: Colors.blueGrey[900],
+        title: const Text('Import Schedule', style: TextStyle(color: Colors.white)),
+        backgroundColor: Colors.black,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: SingleChildScrollView(
         child: Center(
@@ -92,52 +127,70 @@ class _ImportCsvSchedulePageState extends State<ImportCsvSchedulePage> {
                     textAlign: TextAlign.center,
                   ),
 
-                  const SizedBox(height: 20),
-
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          _fileName ?? 'Belum ada file...',
-                          style: const TextStyle(color: Colors.grey),
+                  const SizedBox(height: 30),
+                  
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[900],
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.grey.shade700),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _fileName ?? 'No file choosen',
+                            style: const TextStyle(color: Colors.white70),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      ElevatedButton.icon(
-                        onPressed: _pickCsv,
-                        icon: const Icon(Icons.file_open),
-                        label: const Text("Pilih File"),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blueGrey,
-                          foregroundColor: Colors.white,
+                        const SizedBox(width: 12),
+                        ElevatedButton.icon(
+                          onPressed: _pickCsv,
+                          icon: const Icon(Icons.file_upload, size: 20),
+                          label: const Text("Choose File"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue, 
+                            foregroundColor: Colors.white,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-
+                  
                   const SizedBox(height: 30),
 
-                  ElevatedButton(
+                  OutlinedButton(
                     onPressed: _importCsv,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: Colors.black, 
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
+                      side: const BorderSide(color: Colors.white, width: 2.0),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10)),
                     ),
                     child: const Text(
                       'Import Schedule',
-                      style: TextStyle(fontSize: 16),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                   ),
 
                   const SizedBox(height: 10),
 
-                  TextButton(
+                  OutlinedButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text("Batal",
-                        style: TextStyle(color: Colors.grey)),
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: Colors.black, 
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      side: const BorderSide(color: Colors.white, width: 2.0), 
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                    ),
+                    child: const Text("Cancel",
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   )
                 ],
               ),
