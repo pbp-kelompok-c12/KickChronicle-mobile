@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:provider/provider.dart';
-import 'package:kick_chronicle/modules/auth_profil/screens/login_page.dart'; // Sesuaikan import nanti
+import 'package:kick_chronicle/modules/auth_profil/screens/login_page.dart'; 
 
 void main() {
   runApp(const MyApp());
