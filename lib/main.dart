@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
-import 'package:kick_chronicle/modules/kalender/calendar_screen.dart'; 
+import 'package:provider/provider.dart';
+import 'package:kick_chronicle/modules/auth_profil/screens/login_page.dart'; 
 
 void main() {
   runApp(const MyApp());
@@ -14,18 +14,16 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return Provider(
       create: (_) {
-        CookieRequest request = CookieRequest(); 
-        
+        CookieRequest request = CookieRequest();
         return request;
       },
       child: MaterialApp(
-        title: 'Kick Chronicle App',
+        title: 'KickChronicle',
         theme: ThemeData(
-          brightness: Brightness.dark, 
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple, brightness: Brightness.dark),
           useMaterial3: true,
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
         ),
-        home: const CalendarScreen(), 
+        home: const LoginPage(),
       ),
     );
   }

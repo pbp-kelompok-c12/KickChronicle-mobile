@@ -125,7 +125,6 @@ class _EditSchedulePageState extends State<EditSchedulePage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Jadwal berhasil diubah.')),
       );
-      // Mengirim true agar CalendarScreen me-refresh data
       Navigator.pop(context, true); 
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
