@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:kick_chronicle/modules/auth_profil/screens/register_page.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:kick_chronicle/modules/highlight/screens/home_page_highlight.dart';
 
 // Import khusus Web
 import 'package:google_sign_in_platform_interface/google_sign_in_platform_interface.dart';
@@ -68,7 +69,7 @@ class _LoginPageState extends State<LoginPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text("Selamat datang, ${response['username']}!")),
           );
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomePage()));
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomePageHighlight()));
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text("Gagal login: ${response['message']}")),
@@ -118,7 +119,7 @@ class _LoginPageState extends State<LoginPage> {
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(const SnackBar(content: Text("Login berhasil!")));
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomePage()));
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomePageHighlight()));
       } else {
         if (mounted)
           ScaffoldMessenger.of(context).showSnackBar(
