@@ -104,7 +104,7 @@ class _ImportCsvSchedulePageState extends State<ImportCsvSchedulePage> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text('Import Schedule', style: TextStyle(color: Colors.white)),
+        title: const Text('Back to Schedule', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.black,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
