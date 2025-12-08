@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kick_chronicle/modules/highlight/screens/home_page_highlight.dart';
 import 'package:kick_chronicle/modules/kalender/calendar_screen.dart';
+import 'package:kick_chronicle/modules/tim/standing_page.dart';
 
 class LeftDrawer extends StatelessWidget {
   const LeftDrawer({super.key});
@@ -60,7 +61,7 @@ class LeftDrawer extends StatelessWidget {
           }),
           
           _buildListTile(context, "Team", Icons.group, () {
-            Navigator.pop(context);
+            _navigateToWidget(context, const HomePageTim());
           }),
         ],
       ),
