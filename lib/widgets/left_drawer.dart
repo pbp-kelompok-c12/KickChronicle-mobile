@@ -1,14 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:kick_chronicle/modules/highlight/screens/home_page_highlight.dart';
-// Import halaman-halaman lain nantinya di sini
+import 'package:kick_chronicle/modules/kalender/calendar_screen.dart';
 
 class LeftDrawer extends StatelessWidget {
   const LeftDrawer({super.key});
 
+  void _navigateToWidget(BuildContext context, Widget targetWidget) {
+    Navigator.pop(context);
+    Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => targetWidget),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      backgroundColor: Colors.black, // Background Hitam sesuai tema
+      backgroundColor: Colors.black,
       child: ListView(
         children: [
           const DrawerHeader(
@@ -20,7 +28,6 @@ class LeftDrawer extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Logo KC Kecil di Drawer
                 Text(
                   "Kick Chronicle",
                   textAlign: TextAlign.left,
@@ -40,16 +47,18 @@ class LeftDrawer extends StatelessWidget {
             ),
           ),
 
-          // --- Menu Items ---
           _buildListTile(context, "Highlight", Icons.video_library, () {
-            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomePageHighlight()));
+            _navigateToWidget(context, const HomePageHighlight());
           }),
+          
           _buildListTile(context, "Schedule", Icons.calendar_today, () {
-            Navigator.pop(context);
+            _navigateToWidget(context, const CalendarScreen());
           }),
+          
           _buildListTile(context, "Top Rated", Icons.star, () {
             Navigator.pop(context);
           }),
+          
           _buildListTile(context, "Team", Icons.group, () {
             Navigator.pop(context);
           }),
