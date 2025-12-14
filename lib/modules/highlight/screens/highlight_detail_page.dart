@@ -137,19 +137,30 @@ Future<void> _submitRating(int rating) async {
 
 
 Future<int?> _showRatingDialog() async {
-  int selected = _userRating ?? 5;
+  int selected = _userRating ?? 0;
 
   return showDialog<int>(
     context: context,
+    barrierDismissible: true,
     builder: (context) {
       return StatefulBuilder(
         builder: (context, setDialogState) {
           return AlertDialog(
-            title: const Text("Rate this highlight"),
+            backgroundColor: const Color(0xFFFFFFFF),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: const Center(
+              child: Text(
+                "Rate this Highlight!",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // ⭐⭐⭐⭐⭐ Star UI
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: List.generate(5, (i) {
@@ -157,8 +168,8 @@ Future<int?> _showRatingDialog() async {
                     return IconButton(
                       icon: Icon(
                         Icons.star,
-                        color: val <= selected ? Colors.amber : Colors.grey,
-                        size: 32,
+                        size: 36,
+                        color: val <= selected ? Colors.amber : Colors.grey[400],
                       ),
                       onPressed: () {
                         setDialogState(() {
@@ -168,33 +179,35 @@ Future<int?> _showRatingDialog() async {
                     );
                   }),
                 ),
-                const SizedBox(height: 10),
-
-                Column(
-                  children: List.generate(5, (i) {
-                    final val = i + 1;
-                    return RadioListTile(
-                      title: Text("$val Stars"),
-                      value: val,
-                      groupValue: selected,
-                      onChanged: (v) {
-                        setDialogState(() {
-                          selected = v!;
-                        });
-                      },
-                    );
-                  }),
-                ),
               ],
             ),
+
+            // BUTTONS
+            actionsAlignment: MainAxisAlignment.spaceBetween,
+            actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+
             actions: [
+              // CANCEL BUTTON
               TextButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => Navigator.pop(context, null),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  backgroundColor: Color(0xFF0000ff),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
                 child: const Text("Cancel"),
               ),
+
               TextButton(
                 onPressed: () => Navigator.pop(context, selected),
-                child: const Text("Submit"),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  backgroundColor: Color(0xFF0000ff),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                child: const Text("Confirm"),
               ),
             ],
           );
@@ -203,6 +216,7 @@ Future<int?> _showRatingDialog() async {
     },
   );
 }
+
 
 
   @override
@@ -452,7 +466,7 @@ Future<int?> _showRatingDialog() async {
                                     color: const Color(0xFF374151),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  child: const Text("0 Comments", style: TextStyle(color: Colors.grey, fontSize: 12)),
+                                  child:  Text("$_commentsCount Comments", style: TextStyle(color: Colors.grey, fontSize: 12)),
                                 ),
                               ],
                             ),
