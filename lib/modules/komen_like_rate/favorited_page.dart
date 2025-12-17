@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kick_chronicle/models/highlight.dart';
 import 'package:kick_chronicle/modules/highlight/widgets/favorited_card.dart';
 import 'package:kick_chronicle/modules/highlight/widgets/match_card.dart';
-import 'package:kick_chronicle/services/api_mobile.dart';
+import 'package:kick_chronicle/services/komen_like_service.dart';
 import 'package:kick_chronicle/widgets/left_drawer.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:provider/provider.dart';

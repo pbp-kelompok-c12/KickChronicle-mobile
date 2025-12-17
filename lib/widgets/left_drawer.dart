@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kick_chronicle/modules/highlight/screens/home_page_highlight.dart';
+import 'package:kick_chronicle/modules/komen_like_rate/top_rated_page.dart';
 import 'package:kick_chronicle/modules/kalender/calendar_screen.dart';
 
 class LeftDrawer extends StatelessWidget {
@@ -56,7 +57,7 @@ class LeftDrawer extends StatelessWidget {
           }),
           
           _buildListTile(context, "Top Rated", Icons.star, () {
-            Navigator.pop(context);
+            _navigateToWidget(context,  TopRatedPage());
           }),
           
           _buildListTile(context, "Team", Icons.group, () {

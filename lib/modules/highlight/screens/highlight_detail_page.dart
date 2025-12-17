@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kick_chronicle/models/highlight.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
-import 'package:kick_chronicle/services/api_mobile.dart';
+import 'package:kick_chronicle/services/komen_like_service.dart';
 
 class HighlightDetailPage extends StatefulWidget {
   final Highlight highlight;

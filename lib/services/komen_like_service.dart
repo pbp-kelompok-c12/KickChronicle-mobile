@@ -101,7 +101,8 @@ class ApiMobile {
     String? endDate,
   }) async {
     String url = _url("komen/mobile/top-rated/");
-
+print(startDate);
+print(endDate);
     Map<String, String> query = {};
     if (startDate != null) query["start_date"] = startDate;
     if (endDate != null) query["end_date"] = endDate;
@@ -115,6 +116,7 @@ class ApiMobile {
 
     try {
       final resp = await request.get(url);
+      print(resp.toString());
       return {"ok": true, "data": resp};
     } catch (e) {
       return {"ok": false, "message": "Error fetching top rated: $e"};

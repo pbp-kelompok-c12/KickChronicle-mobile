@@ -13,8 +13,10 @@ class Highlight {
   Season season;
   TeamStanding? homeStanding;
   TeamStanding? awayStanding;
+  double avgRating;
 
   Highlight({
+    required this.avgRating,
     required this.id,
     required this.name,
     required this.url,
@@ -26,21 +28,41 @@ class Highlight {
     this.awayStanding,
   });
 
-  factory Highlight.fromJson(Map<String, dynamic> json) => Highlight(
-    id: json["id"].toString(), // Ensure string
-    name: json["name"],
-    url: json["url"],
-    manualThumbnailUrl: json["manual_thumbnail_url"],
-    description: json["description"],
-    createdAt: DateTime.parse(json["created_at"]),
-    season: seasonValues.map[json["season"]] ?? Season.THE_2425,
-    homeStanding: json["home_standing"] != null
-        ? TeamStanding.fromJson(json["home_standing"])
-        : null,
-    awayStanding: json["away_standing"] != null
-        ? TeamStanding.fromJson(json["away_standing"])
-        : null,
-  );
+@override
+String toString() {
+  return '''
+Highlight(
+  id: $id,
+  name: $name,
+  season: ${seasonValues.reverse[season]},
+  avgRating: $avgRating,
+  createdAt: $createdAt,
+  thumbnail: $manualThumbnailUrl,
+  homeStanding: ${homeStanding != null ? homeStanding.toString() : "null"},
+  awayStanding: ${awayStanding != null ? awayStanding.toString() : "null"}
+)
+''';
+}
+
+factory Highlight.fromJson(Map<String, dynamic> json) => Highlight(
+  id: json["id"].toString(),
+  name: json["name"] ?? json["title"] ?? "",
+  url: (json["url"] ?? "") is String ? json["url"] ?? "" : "",
+  manualThumbnailUrl: json["manual_thumbnail_url"] ?? json["thumbnail"] ?? "",
+  description: (json["description"] ?? "") is String ? json["description"] ?? "" : "",
+  createdAt: DateTime.tryParse(json["created_at"] ?? "") ?? DateTime.now(),
+  season: seasonValues.map[json["season"]] ?? Season.THE_2425,
+    avgRating: (json["avg_rating"] is num)
+            ? (json["avg_rating"] as num).toDouble()
+            : 0.0,
+  homeStanding: json["home_standing"] != null
+      ? TeamStanding.fromJson(json["home_standing"])
+      : null,
+  awayStanding: json["away_standing"] != null
+      ? TeamStanding.fromJson(json["away_standing"])
+      : null,
+);
+
 }
 
 enum Season {
