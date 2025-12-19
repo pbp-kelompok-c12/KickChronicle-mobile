@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kick_chronicle/models/highlight.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import 'package:kick_chronicle/services/komen_like_service.dart';
 
 class HighlightDetailPage extends StatefulWidget {
   final Highlight highlight;
@@ -13,6 +14,14 @@ class HighlightDetailPage extends StatefulWidget {
 }
 
 class _HighlightDetailPageState extends State<HighlightDetailPage> {
+
+  final TextEditingController _commentController = TextEditingController();
+  List<Map<String, dynamic>> _comments = [];
+  bool _isFavorite = false;
+  int _commentsCount = 0;
+  int? _userRating = 0;
+
+
   late YoutubePlayerController _controller;
   bool _isPlayerReady = false;
 
@@ -37,6 +46,9 @@ class _HighlightDetailPageState extends State<HighlightDetailPage> {
         enableCaption: true,
       ),
     )..addListener(_listener);
+
+      _loadInitialData();
+
   }
 
   void _listener() {
@@ -44,6 +56,168 @@ class _HighlightDetailPageState extends State<HighlightDetailPage> {
       // Logic for state changes if needed
     }
   }
+
+  Future<void> _loadInitialData() async {
+  final api = ApiMobile.fromContext(context);
+  final highlightId = widget.highlight.id.toString();
+
+  final commentRes = await api.getComments(highlightId: highlightId);
+  if (commentRes['ok']) {
+    setState(() {
+      _comments = List<Map<String, dynamic>>.from(commentRes['data']['comments']);
+      _commentsCount = _comments.length;
+    });
+  }
+
+  final favRes = await api.getFavorites();
+  if (favRes['ok']) {
+    final favs = favRes['data']['favorites'] as List;
+    setState(() {
+      _isFavorite = favs.any((f) => f['id'].toString() == highlightId);
+    });
+  }
+
+  final rateRes = await api.getUserRating(highlightId: highlightId);
+  if (rateRes['ok']) {
+    setState(() {
+      _userRating = rateRes['data']['rating'];
+    });
+  }
+
+}
+
+
+Future<void> _sendComment() async {
+  final api = ApiMobile.fromContext(context);
+  final highlightId = widget.highlight.id.toString();
+  final text = _commentController.text.trim();
+
+  if (text.isEmpty) return;
+
+  final res = await api.addComment(highlightId: highlightId, content: text);
+  if (!res['ok']) return;
+
+  final data = res['data'];
+
+  setState(() {
+    _comments.insert(0, {
+      'id': data['id'],
+      'user': data['user'],
+      'content': data['content'],
+      'created_at': data['created_at'],
+    });
+    _commentsCount += 1;
+    _commentController.clear();
+  });
+}
+
+
+Future<void> _toggleFavorite() async {
+  final api = ApiMobile.fromContext(context);
+  final res = await api.toggleFavorite(highlightId: widget.highlight.id.toString());
+
+  if (!res['ok']) return;
+
+  setState(() {
+    _isFavorite = res['data']['favorited'];
+  });
+}
+
+
+Future<void> _submitRating(int rating) async {
+  final api = ApiMobile.fromContext(context);
+  await api.submitRating(
+    highlightId: widget.highlight.id.toString(),
+    rating: rating,
+  );
+
+  ScaffoldMessenger.of(context)
+      .showSnackBar(const SnackBar(content: Text("Thanks for rating!")));
+}
+
+
+Future<int?> _showRatingDialog() async {
+  int selected = _userRating ?? 0;
+
+  return showDialog<int>(
+    context: context,
+    barrierDismissible: true,
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            backgroundColor: const Color(0xFFFFFFFF),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: const Center(
+              child: Text(
+                "Rate this Highlight!",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(5, (i) {
+                    final val = i + 1;
+                    return IconButton(
+                      icon: Icon(
+                        Icons.star,
+                        size: 36,
+                        color: val <= selected ? Colors.amber : Colors.grey[400],
+                      ),
+                      onPressed: () {
+                        setDialogState(() {
+                          selected = val;
+                        });
+                      },
+                    );
+                  }),
+                ),
+              ],
+            ),
+
+            // BUTTONS
+            actionsAlignment: MainAxisAlignment.spaceBetween,
+            actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+
+            actions: [
+              // CANCEL BUTTON
+              TextButton(
+                onPressed: () => Navigator.pop(context, null),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  backgroundColor: Color(0xFF0000ff),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                child: const Text("Cancel"),
+              ),
+
+              TextButton(
+                onPressed: () => Navigator.pop(context, selected),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  backgroundColor: Color(0xFF0000ff),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                child: const Text("Confirm"),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+}
+
+
 
   @override
   void deactivate() {
@@ -168,7 +342,10 @@ class _HighlightDetailPageState extends State<HighlightDetailPage> {
                           ),
                           const SizedBox(width: 8),
                           OutlinedButton(
-                            onPressed: () {},
+                            onPressed: ()  async {
+                              final rating = await _showRatingDialog();
+                              if (rating != null) _submitRating(rating);
+                            },
                             style: OutlinedButton.styleFrom(
                               side: const BorderSide(color: Colors.grey),
                               padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -178,14 +355,14 @@ class _HighlightDetailPageState extends State<HighlightDetailPage> {
                           ),
                           const SizedBox(width: 8),
                           OutlinedButton.icon(
-                            onPressed: () {},
+                            onPressed: _toggleFavorite,
                             style: OutlinedButton.styleFrom(
                               side: const BorderSide(color: Colors.grey),
                               padding: const EdgeInsets.symmetric(horizontal: 12),
                               foregroundColor: Colors.white,
                             ),
-                            icon: const Icon(Icons.favorite_border, size: 18),
-                            label: const Text("Favorite"),
+                            icon: Icon(_isFavorite ? Icons.favorite : Icons.favorite_border, size: 18),
+                            label: Text(_isFavorite ? "Favorited" : "Favorite"),
                           ),
                         ],
                       ),
@@ -289,7 +466,7 @@ class _HighlightDetailPageState extends State<HighlightDetailPage> {
                                     color: const Color(0xFF374151),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  child: const Text("0 Comments", style: TextStyle(color: Colors.grey, fontSize: 12)),
+                                  child:  Text("$_commentsCount Comments", style: TextStyle(color: Colors.grey, fontSize: 12)),
                                 ),
                               ],
                             ),
@@ -300,6 +477,7 @@ class _HighlightDetailPageState extends State<HighlightDetailPage> {
                               children: [
                                 Expanded(
                                   child: TextField(
+                                    controller: _commentController,
                                     style: const TextStyle(color: Colors.white),
                                     decoration: InputDecoration(
                                       hintText: "Write a comment...",
@@ -316,7 +494,7 @@ class _HighlightDetailPageState extends State<HighlightDetailPage> {
                                 ),
                                 const SizedBox(width: 8),
                                 ElevatedButton(
-                                  onPressed: () {},
+                                  onPressed: _sendComment,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFF4F46E5),
                                     foregroundColor: Colors.white,
@@ -330,12 +508,18 @@ class _HighlightDetailPageState extends State<HighlightDetailPage> {
                             const SizedBox(height: 24),
 
                             // Empty State
-                            const Center(
-                              child: Text(
-                                "No comments yet.",
-                                style: TextStyle(color: Colors.grey),
-                              ),
-                            ),
+                    if (_comments.isEmpty)
+                      const Center(child: Text("No comments yet.", style: TextStyle(color: Colors.grey)))
+                    else
+                      Column(
+                        children: _comments.map((c) {
+                          return ListTile(
+                            title: Text(c['user'], style: const TextStyle(color: Colors.white)),
+                            subtitle: Text(c['content'], style: const TextStyle(color: Colors.grey)),
+                          );
+                        }).toList(),
+                      ),
+
                             const SizedBox(height: 8),
                           ],
                         ),
