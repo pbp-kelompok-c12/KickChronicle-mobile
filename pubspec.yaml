@@ -51,6 +51,7 @@ dependencies:
   google_sign_in: ^6.2.1
   google_sign_in_web: ^0.12.4
   google_sign_in_platform_interface: ^2.4.0
+  image_picker: ^1.0.4
   # --- Akhir Dependensi Gabungan ---
 
 
@@ -77,6 +78,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/team/
+    - assets/images/default.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:

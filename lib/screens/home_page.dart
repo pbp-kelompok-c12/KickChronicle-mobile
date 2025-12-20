@@ -2,11 +2,78 @@ import 'package:flutter/material.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:google_sign_in/google_sign_in.dart'; // Import Google Sign In
 import 'package:kick_chronicle/modules/auth_profil/screens/login_page.dart';
+import 'package:kick_chronicle/modules/auth_profil/screens/profile_page.dart';
 import 'package:kick_chronicle/widgets/left_drawer.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  String? _profileImageUrl;
+  String? _googlePhotoUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchProfileImage();
+    _checkGooglePhoto();
+  }
+
+  // Ambil data profil dari Django untuk mendapatkan URL foto
+  Future<void> _fetchProfileImage() async {
+    final request = context.read<CookieRequest>();
+    String baseUrl = kIsWeb ? "http://127.0.0.1:8000" : "http://10.0.2.2:8000";
+    String url = "$baseUrl/auth/mobile/profile/";
+
+    try {
+      final response = await request.get(url);
+      if (mounted && response['status'] == true) {
+        setState(() {
+          _profileImageUrl = response['data']['image_url'];
+        });
+      }
+    } catch (_) {}
+  }
+
+  // Cek foto Google jika login via Google
+  Future<void> _checkGooglePhoto() async {
+    final GoogleSignIn googleSignIn = GoogleSignIn(
+      clientId:
+          '935238606733-r2o3ii14m8ns65r9all4d0jcst0s3rld.apps.googleusercontent.com',
+      scopes: ['email', 'profile'],
+    );
+    if (await googleSignIn.isSignedIn()) {
+      final user = googleSignIn.currentUser;
+      if (user != null) {
+        setState(() {
+          _googlePhotoUrl = user.photoUrl;
+        });
+      }
+    }
+  }
+
+  // Logika Pemilihan Gambar Navbar (Sama dengan ProfilePage)
+  ImageProvider _getNavbarImage() {
+    // 1. Prioritas: Foto dari Django
+    if (_profileImageUrl != null && _profileImageUrl!.isNotEmpty) {
+      String baseUrl = kIsWeb
+          ? "http://127.0.0.1:8000"
+          : "http://10.0.2.2:8000";
+      return NetworkImage("$baseUrl/media/$_profileImageUrl");
+    }
+    // 2. Foto Google
+    if (_googlePhotoUrl != null) {
+      return NetworkImage(_googlePhotoUrl!);
+    }
+    // 3. Default Asset (PERBAIKAN BUG)
+    return const AssetImage('assets/images/default.png');
+  }
 
   Future<void> _handleLogout(
     BuildContext context,
@@ -17,7 +84,6 @@ class HomePage extends StatelessWidget {
 
     try {
       final response = await request.logout(logoutUrl);
-
       if (context.mounted) {
         if (response['status']) {
           String uname = response['username'] ?? "User";
@@ -27,7 +93,6 @@ class HomePage extends StatelessWidget {
               backgroundColor: Colors.green,
             ),
           );
-
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (context) => const LoginPage()),
@@ -43,14 +108,13 @@ class HomePage extends StatelessWidget {
         }
       }
     } catch (e) {
-      if (context.mounted) {
+      if (context.mounted)
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text("Error logout: $e"),
             backgroundColor: Colors.red,
           ),
         );
-      }
     }
   }
 
@@ -63,7 +127,6 @@ class HomePage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.black,
       drawer: const LeftDrawer(),
-
       appBar: AppBar(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
@@ -101,9 +164,7 @@ class HomePage extends StatelessWidget {
                 color: Colors.white,
               ),
             ),
-
             const SizedBox(width: 40),
-
             if (isDesktop) ...[
               _buildNavbarLink("Highlight"),
               _buildNavbarLink("Schedule"),
@@ -112,19 +173,17 @@ class HomePage extends StatelessWidget {
             ],
           ],
         ),
-
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: PopupMenuButton<String>(
-              // Tambahkan <String> di sini
               offset: const Offset(0, 50),
               color: const Color(0xFF1F2937),
-              icon: const CircleAvatar(
-                backgroundColor: Color(0xFF2C3246),
-                child: Icon(Icons.person, color: Colors.white),
+              child: CircleAvatar(
+                backgroundColor: const Color(0xFF2C3246),
+                backgroundImage:
+                    _getNavbarImage(), // MENGGUNAKAN GAMBAR YANG BENAR
               ),
-              // PERBAIKAN DI SINI: Tambahkan <PopupMenuEntry<String>>
               itemBuilder: (context) => <PopupMenuEntry<String>>[
                 const PopupMenuItem<String>(
                   value: 'profile',
@@ -148,42 +207,27 @@ class HomePage extends StatelessWidget {
                   ),
                 ),
               ],
-              onSelected: (value) {
+              onSelected: (value) async {
                 if (value == 'logout') {
                   _handleLogout(context, request);
                 } else if (value == 'profile') {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Menuju Halaman Profil...")),
+                  // Refresh navbar image when returning from profile page (in case user updated it)
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ProfilePage(),
+                    ),
                   );
+                  _fetchProfileImage();
                 }
               },
             ),
           ),
         ],
       ),
-
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.construction, size: 80, color: Colors.grey),
-            const SizedBox(height: 20),
-            const Text(
-              "Welcome to Kick Chronicle",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              "Main content is under construction.",
-              style: TextStyle(color: Colors.grey[400], fontSize: 16),
-            ),
-          ],
-        ),
-      ),
+      body: const Center(
+        child: Text("Main Content", style: TextStyle(color: Colors.white)),
+      ), // Placeholder
     );
   }
 
