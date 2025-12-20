@@ -1,10 +1,10 @@
-
 class Standing {
   Standing({
     required this.id,
     required this.season,
     required this.position,
     required this.team,
+    this.calendarTeam,
     required this.played,
     required this.won,
     required this.drawn,
@@ -20,6 +20,7 @@ class Standing {
   final String season;
   final int position;
   final String team;
+  final String? calendarTeam;
   final int played;
   final int won;
   final int drawn;
@@ -65,6 +66,7 @@ class Standing {
       season: json['season']?.toString() ?? '',
       position: toInt(json['position']),
       team: json['team']?.toString() ?? '',
+      calendarTeam: json['calendar_team']?.toString(),
       played: toInt(json['played']),
       won: toInt(json['won']),
       drawn: toInt(json['drawn']),
@@ -83,6 +85,7 @@ class Standing {
       'season': season,
       'position': position,
       'team': team,
+      'calendar_team': calendarTeam,
       'played': played,
       'won': won,
       'drawn': drawn,
@@ -115,5 +118,12 @@ class Standing {
   String? get assetLogoPath {
     if (logoUrl == null || logoUrl!.isEmpty) return null;
     return logoUrl;
+  }
+
+  /// Team name to be used when querying calendar/team schedule API.
+  /// Falls back to `team` if backend doesn't provide `calendar_team`.
+  String get calendarTeamQuery {
+    final value = calendarTeam?.trim();
+    return (value != null && value.isNotEmpty) ? value : team;
   }
 }

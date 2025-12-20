@@ -1,9 +1,16 @@
-import 'dart:convert';
-
 List<Match> matchFromJson(dynamic data, DateTime selectedDate) {
   if (data is Map<String, dynamic> && data.containsKey('matches')) {
     return List<Match>.from(
       data['matches'].map((x) => Match.fromJson(x, selectedDate)),
+    );
+  }
+  return [];
+}
+
+List<Match> teamMatchesFromJson(dynamic data) {
+  if (data is Map<String, dynamic> && data.containsKey('matches')) {
+    return List<Match>.from(
+      data['matches'].map((x) => Match.fromTeamJson(x)),
     );
   }
   return [];
@@ -48,6 +55,31 @@ class Match {
       team2: json['team_2'] as String,
       team2Logo: fixLogoPath(json['team_2_logo'] as String?),
       date: DateTime.parse(dateTimeString),
+      description: json['description'] as String?,
+    );
+  }
+
+  factory Match.fromTeamJson(Map<String, dynamic> json) {
+    String fixLogoPath(String? path) {
+      if (path == null || path.isEmpty) return "";
+      return path.replaceFirst("/static/images/", "assets/images/");
+    }
+
+    final String datePart = (json['date'] as String?) ?? '';
+    final String timePart = (json['start_time'] as String?) ?? '00:00';
+
+    final String normalizedTime =
+        timePart.length == 5 ? '${timePart}:00' : timePart;
+    final DateTime parsed =
+        DateTime.tryParse('${datePart}T$normalizedTime') ?? DateTime.now();
+
+    return Match(
+      id: json['id'] as int?,
+      team1: json['team_1'] as String,
+      team1Logo: fixLogoPath(json['team_1_logo'] as String?),
+      team2: json['team_2'] as String,
+      team2Logo: fixLogoPath(json['team_2_logo'] as String?),
+      date: parsed,
       description: json['description'] as String?,
     );
   }
