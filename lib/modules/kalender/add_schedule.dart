@@ -261,7 +261,7 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text("Add Schedule", style: TextStyle(color: Colors.white)),
+        title: const Text("Back to Schedule", style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.black,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
