@@ -254,7 +254,7 @@ class _EditSchedulePageState extends State<EditSchedulePage> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text("Edit Schedule", style: TextStyle(color: Colors.white)),
+        title: const Text("Back to Schedule", style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.black,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -275,7 +275,7 @@ class _EditSchedulePageState extends State<EditSchedulePage> {
                   shrinkWrap: true,
                   children: [
                     const Text(
-                      "Edit Match",
+                      "Edit Schedule",
                       style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
                     const SizedBox(height: 20),

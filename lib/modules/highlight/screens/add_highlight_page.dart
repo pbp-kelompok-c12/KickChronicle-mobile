@@ -34,8 +34,7 @@ class _AddHighlightPageState extends State<AddHighlightPage> {
     if (!_formKey.currentState!.validate()) return;
 
     final request = context.read<CookieRequest>();
-
-    // Replace with your actual local IP/URL (10.0.2.2 for emulator)
+    
     const url = 'http://127.0.0.1:8000/add-highlight-flutter/';
 
     final response = await request.postJson(
