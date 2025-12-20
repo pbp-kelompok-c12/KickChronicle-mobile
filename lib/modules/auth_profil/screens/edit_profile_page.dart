@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:image_picker/image_picker.dart'; // Import Image Picker
+import 'package:image_picker/image_picker.dart';
 import 'package:kick_chronicle/models/user_profile.dart';
 
 class EditProfilePage extends StatefulWidget {
@@ -24,10 +24,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
   late TextEditingController _lastNameController;
   late TextEditingController _emailController;
 
-  // Variabel untuk Gambar
-  File? _imageFile; // Untuk menyimpan file gambar di Mobile (Android/iOS)
-  Uint8List? _webImage; // Untuk menyimpan bytes gambar di Web
-  String? _base64Image; // String base64 yang akan dikirim ke Django
+  File? _imageFile;
+  Uint8List? _webImage;
+  String? _base64Image;
   final ImagePicker _picker = ImagePicker();
 
   bool _isLoading = false;
@@ -47,7 +46,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _emailController = TextEditingController(text: widget.userProfile.email);
   }
 
-  // --- Fungsi Pilih Gambar ---
   Future<void> _pickImage() async {
     final XFile? pickedFile = await _picker.pickImage(
       source: ImageSource.gallery,
@@ -55,39 +53,32 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
     if (pickedFile != null) {
       if (kIsWeb) {
-        // Logika Khusus Web
         var f = await pickedFile.readAsBytes();
         setState(() {
           _webImage = f;
           _imageFile = null;
-          // Konversi ke Base64 untuk dikirim
           _base64Image = base64Encode(f);
         });
       } else {
-        // Logika Mobile
         final bytes = await File(pickedFile.path).readAsBytes();
         setState(() {
           _imageFile = File(pickedFile.path);
           _webImage = null;
-          // Konversi ke Base64 untuk dikirim
           _base64Image = base64Encode(bytes);
         });
       }
     }
   }
 
-  // --- Fungsi Simpan Profil ---
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
     final request = context.read<CookieRequest>();
 
-    // Tentukan URL (Gunakan 10.0.2.2 untuk Android Emulator)
     String baseUrl = kIsWeb ? "http://127.0.0.1:8000" : "http://10.0.2.2:8000";
     String url = "$baseUrl/auth/mobile/profile/edit/";
 
-    // Siapkan data JSON
     Map<String, dynamic> data = {
       'username': _usernameController.text,
       'first_name': _firstNameController.text,
@@ -95,7 +86,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
       'email': _emailController.text,
     };
 
-    // Jika ada gambar baru, masukkan ke JSON
     if (_base64Image != null) {
       data['image'] = _base64Image;
     }
@@ -133,7 +123,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
         content: Text(message, style: const TextStyle(color: Colors.white70)),
         actions: [
           TextButton(
-            child: const Text("OK", style: TextStyle(color: Colors.deepOrange)),
+            // [UBAH WARNA DISINI]
+            child: const Text("OK", style: TextStyle(color: Color(0xFF4F46E5))),
             onPressed: () => Navigator.pop(ctx),
           ),
         ],
@@ -174,7 +165,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
           key: _formKey,
           child: Column(
             children: [
-              // --- BAGIAN FOTO PROFIL DENGAN PREVIEW ---
               Center(
                 child: Stack(
                   children: [
@@ -182,24 +172,28 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.deepOrange, width: 2),
+                        // [UBAH WARNA DISINI]
+                        border: Border.all(
+                          color: const Color(0xFF4F46E5),
+                          width: 2,
+                        ),
                       ),
                       child: CircleAvatar(
                         radius: 60,
                         backgroundColor: Colors.grey[800],
-                        backgroundImage:
-                            _getPreviewImage(), // Fungsi Helper Gambar
+                        backgroundImage: _getPreviewImage(),
                       ),
                     ),
                     Positioned(
                       bottom: 0,
                       right: 0,
                       child: GestureDetector(
-                        onTap: _pickImage, // Trigger pick image
+                        onTap: _pickImage,
                         child: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: const BoxDecoration(
-                            color: Colors.deepOrange,
+                            // [UBAH WARNA DISINI]
+                            color: Color(0xFF4F46E5),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
@@ -216,15 +210,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
               const SizedBox(height: 10),
               TextButton(
                 onPressed: _pickImage,
+                // [UBAH WARNA DISINI]
                 child: const Text(
                   "Change Profile Photo",
-                  style: TextStyle(color: Colors.deepOrange),
+                  style: TextStyle(color: Color(0xFF4F46E5)),
                 ),
               ),
 
               const SizedBox(height: 30),
 
-              // --- FORM FIELDS ---
               _buildTextField(
                 label: "Username",
                 controller: _usernameController,
@@ -261,7 +255,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 height: 55,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepOrange,
+                    // [UBAH WARNA DISINI]
+                    backgroundColor: const Color(0xFF4F46E5),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -281,17 +276,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
-  // --- Helper: Menentukan Gambar Mana yang Ditampilkan ---
   ImageProvider _getPreviewImage() {
-    // 1. Jika User baru saja memilih gambar (Mobile File)
     if (_imageFile != null) {
       return FileImage(_imageFile!);
     }
-    // 2. Jika User baru saja memilih gambar (Web Bytes)
     if (_webImage != null) {
       return MemoryImage(_webImage!);
     }
-    // 3. Jika tidak ada gambar baru, tampilkan gambar lama dari Django
+
     if (widget.userProfile.imageUrl != null &&
         widget.userProfile.imageUrl!.isNotEmpty) {
       String baseUrl = kIsWeb
@@ -301,7 +293,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
           "$baseUrl${widget.userProfile.imageUrl!}?v=${DateTime.now().millisecondsSinceEpoch}";
       return NetworkImage(url);
     }
-    // 4. Default Image
+
     return const AssetImage('assets/images/default.png');
   }
 
@@ -329,9 +321,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide.none,
           ),
+          // [UBAH WARNA DISINI]
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.deepOrange, width: 2),
+            borderSide: const BorderSide(color: Color(0xFF4F46E5), width: 2),
           ),
         ),
       ),
