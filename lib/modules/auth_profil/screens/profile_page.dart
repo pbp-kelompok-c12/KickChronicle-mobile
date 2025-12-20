@@ -20,15 +20,16 @@ class _ProfilePageState extends State<ProfilePage> {
   UserProfile? userProfile;
   bool isLoading = true;
   String? googlePhotoUrl;
+  bool _isGoogleUser = false;
 
   @override
   void initState() {
     super.initState();
     fetchProfile();
-    _checkGooglePhoto();
+    _checkGoogleStatus();
   }
 
-  Future<void> _checkGooglePhoto() async {
+  Future<void> _checkGoogleStatus() async {
     final GoogleSignIn googleSignIn = GoogleSignIn(
       clientId:
           '935238606733-r2o3ii14m8ns65r9all4d0jcst0s3rld.apps.googleusercontent.com',
@@ -37,20 +38,20 @@ class _ProfilePageState extends State<ProfilePage> {
     try {
       if (await googleSignIn.isSignedIn()) {
         final user = googleSignIn.currentUser;
-        if (user != null) {
+        if (mounted) {
           setState(() {
-            googlePhotoUrl = user.photoUrl;
+            _isGoogleUser = true;
+            if (user != null) {
+              googlePhotoUrl = user.photoUrl;
+            }
           });
         }
       }
-    } catch (e) {
-      // Handle error silently or log it
-    }
+    } catch (_) {}
   }
 
   Future<void> fetchProfile() async {
     final request = context.read<CookieRequest>();
-    // Gunakan '10.0.2.2' untuk Android Emulator, '127.0.0.1' untuk Web
     String baseUrl = kIsWeb ? "http://127.0.0.1:8000" : "http://10.0.2.2:8000";
     String url = "$baseUrl/auth/mobile/profile/";
 
@@ -69,63 +70,60 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  // --- LOGIKA PRIORITAS GAMBAR ---
   ImageProvider _getProfileImage() {
-    // 1. Prioritas Utama: Foto upload dari Django
     if (userProfile?.imageUrl != null && userProfile!.imageUrl!.isNotEmpty) {
       String baseUrl = kIsWeb
           ? "http://127.0.0.1:8000"
           : "http://10.0.2.2:8000";
-          String url =
+      String url =
           "$baseUrl${userProfile!.imageUrl!}?v=${DateTime.now().millisecondsSinceEpoch}";
       return NetworkImage(url);
     }
-
-    // 2. Prioritas Kedua: Foto Google (jika login sosmed)
     if (googlePhotoUrl != null) {
       return NetworkImage(googlePhotoUrl!);
     }
-
-    // 3. Terakhir: Foto Default Aset
     return const AssetImage('assets/images/default.png');
   }
 
-  // Fungsi Delete Account
   Future<void> _deleteAccount() async {
     final request = context.read<CookieRequest>();
     String baseUrl = kIsWeb ? "http://127.0.0.1:8000" : "http://10.0.2.2:8000";
     String url = "$baseUrl/auth/mobile/delete-account/";
 
-    final response = await request.postJson(url, jsonEncode({}));
+    try {
+      final response = await request.postJson(url, jsonEncode({}));
+      if (mounted) {
+        if (response['status'] == true) {
+          final GoogleSignIn googleSignIn = GoogleSignIn(
+            clientId:
+                '935238606733-r2o3ii14m8ns65r9all4d0jcst0s3rld.apps.googleusercontent.com',
+            scopes: ['email', 'profile'],
+          );
+          if (await googleSignIn.isSignedIn()) {
+            await googleSignIn.signOut();
+          }
 
-    if (mounted) {
-      if (response['status'] == true) {
-        // Logout Google juga jika perlu
-        final GoogleSignIn googleSignIn = GoogleSignIn(
-          clientId:
-              '935238606733-r2o3ii14m8ns65r9all4d0jcst0s3rld.apps.googleusercontent.com',
-          scopes: ['email', 'profile'],
-        );
-        if (await googleSignIn.isSignedIn()) {
-          await googleSignIn.signOut();
+          Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const LoginPage()),
+            (route) => false,
+          );
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Account deleted successfully."),
+              backgroundColor: Colors.red,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(response['message'])));
         }
-
-        // Kembali ke Login Page dan hapus semua route
-        Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const LoginPage()),
-          (route) => false,
-        );
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Account deleted successfully."),
-            backgroundColor: Colors.red,
-          ),
-        );
-      } else {
+      }
+    } catch (e) {
+      if (mounted)
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(response['message'])));
-      }
+        ).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
   }
 
@@ -134,9 +132,10 @@ class _ProfilePageState extends State<ProfilePage> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1F2937),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text(
           "Delete Account",
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         content: const Text(
           "Are you sure you want to delete your account? This action cannot be undone.",
@@ -145,14 +144,18 @@ class _ProfilePageState extends State<ProfilePage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
+            child: const Text(
+              "Cancel",
+              style: TextStyle(color: Colors.white70),
+            ),
           ),
-          TextButton(
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () {
               Navigator.pop(context);
               _deleteAccount();
             },
-            child: const Text("Delete", style: TextStyle(color: Colors.red)),
+            child: const Text("Delete", style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -162,36 +165,50 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black, // Background Gelap
+      backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
+        elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
+        centerTitle: true,
         title: const Text(
           "My Profile",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
         ),
         actions: [
-          // Tombol Edit di AppBar
-          IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: () async {
-              if (userProfile != null) {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        EditProfilePage(userProfile: userProfile!),
-                  ),
-                );
-                fetchProfile(); // Refresh data setelah kembali dari edit
-              }
-            },
+          Container(
+            margin: const EdgeInsets.only(right: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1F2937),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.edit, size: 20, color: Colors.white),
+              tooltip: "Edit Profile",
+              onPressed: () async {
+                if (userProfile != null) {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          EditProfilePage(userProfile: userProfile!),
+                    ),
+                  );
+                  fetchProfile();
+                }
+              },
+            ),
           ),
         ],
       ),
       body: isLoading
+          // [UBAH WARNA DISINI]
           ? const Center(
-              child: CircularProgressIndicator(color: Colors.deepOrange),
+              child: CircularProgressIndicator(color: Color(0xFF4F46E5)),
             )
           : userProfile == null
           ? const Center(
@@ -201,76 +218,106 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             )
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               child: Column(
                 children: [
-                  // FOTO PROFIL BULAT
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.deepOrange,
-                        width: 3,
-                      ), // Border Oranye
-                    ),
-                    child: CircleAvatar(
-                      radius: 65,
-                      backgroundColor: Colors.grey[800],
-                      backgroundImage: _getProfileImage(),
+                  const SizedBox(height: 10),
+                  Center(
+                    child: Stack(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            // [UBAH WARNA DISINI]
+                            border: Border.all(
+                              color: const Color(0xFF4F46E5),
+                              width: 3,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                // [UBAH WARNA DISINI]
+                                color: const Color(0xFF4F46E5).withOpacity(0.3),
+                                blurRadius: 15,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                          child: CircleAvatar(
+                            radius: 60,
+                            backgroundColor: Colors.grey[800],
+                            backgroundImage: _getProfileImage(),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 20),
-
-                  // NAMA & EMAIL
                   Text(
-                    userProfile!.username,
+                    "${userProfile!.firstName} ${userProfile!.lastName}",
                     style: const TextStyle(
-                      fontSize: 28,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
+                      letterSpacing: 0.5,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   Text(
-                    userProfile!.email,
-                    style: TextStyle(fontSize: 16, color: Colors.grey[400]),
+                    "@${userProfile!.username}",
+                    // [UBAH WARNA DISINI]
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Color(0xFF4F46E5),
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
+
                   const SizedBox(height: 40),
 
-                  // INFO CARDS
-                  _buildInfoTile(
-                    "Full Name",
-                    "${userProfile!.firstName} ${userProfile!.lastName}",
+                  _buildSectionTitle("Personal Info"),
+                  const SizedBox(height: 12),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1F2937),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white10),
+                    ),
+                    child: Column(
+                      children: [
+                        _buildInfoRow(
+                          Icons.person_outline,
+                          "Username",
+                          userProfile!.username,
+                        ),
+                        _buildDivider(),
+                        _buildInfoRow(
+                          Icons.email_outlined,
+                          "Email",
+                          userProfile!.email,
+                        ),
+                        _buildDivider(),
+                        _buildInfoRow(
+                          Icons.badge_outlined,
+                          "Full Name",
+                          "${userProfile!.firstName} ${userProfile!.lastName}",
+                        ),
+                      ],
+                    ),
                   ),
-                  _buildInfoTile("Username", userProfile!.username),
-                  _buildInfoTile("Email", userProfile!.email),
-                  const SizedBox(height: 40),
 
-                  // TOMBOL CHANGE PASSWORD
-                  SizedBox(
-                    width: double.infinity,
-                    height: 55,
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(
-                          0xFF374151,
-                        ), // Dark grey button
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                      icon: const Icon(Icons.lock_outline),
-                      label: const Text(
-                        "Change Password",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      onPressed: () {
+                  const SizedBox(height: 30),
+
+                  _buildSectionTitle("Account Settings"),
+                  const SizedBox(height: 12),
+
+                  if (!_isGoogleUser) ...[
+                    _buildActionTile(
+                      icon: Icons.lock_outline,
+                      title: "Change Password",
+                      color: Colors.white,
+                      onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -279,71 +326,130 @@ class _ProfilePageState extends State<ProfilePage> {
                         );
                       },
                     ),
+                    const SizedBox(height: 12),
+                  ],
+
+                  _buildActionTile(
+                    icon: Icons.delete_forever_outlined,
+                    title: "Delete Account",
+                    color: Colors.redAccent,
+                    isDestructive: true,
+                    onTap: _showDeleteConfirmation,
                   ),
 
-                  const SizedBox(height: 16),
-
-                  // TOMBOL DELETE ACCOUNT
-                  SizedBox(
-                    width: double.infinity,
-                    height: 55,
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red.shade900.withOpacity(0.8),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                      icon: const Icon(Icons.delete_outline),
-                      label: const Text(
-                        "Delete Account",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      onPressed: _showDeleteConfirmation,
-                    ),
-                  ),
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 40),
                 ],
               ),
             ),
     );
   }
 
-  Widget _buildInfoTile(String label, String value) {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1F2937), // Card agak terang dari background
-        borderRadius: BorderRadius.circular(16),
+  Widget _buildSectionTitle(String title) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Text(
+        title.toUpperCase(),
+        style: TextStyle(
+          color: Colors.grey[500],
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 1.2,
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Row(
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.grey[500],
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            value.isEmpty ? "-" : value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
+          Icon(icon, color: Colors.grey[400], size: 22),
+          const SizedBox(width: 16),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(color: Colors.grey[500], fontSize: 12),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value.isEmpty ? "-" : value,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDivider() {
+    return Divider(
+      height: 1,
+      color: Colors.white.withOpacity(0.05),
+      indent: 58,
+    );
+  }
+
+  Widget _buildActionTile({
+    required IconData icon,
+    required String title,
+    required Color color,
+    required VoidCallback onTap,
+    bool isDestructive = false,
+  }) {
+    return Material(
+      color: isDestructive
+          ? Colors.red.withOpacity(0.1)
+          : const Color(0xFF1F2937),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          decoration: isDestructive
+              ? null
+              : BoxDecoration(
+                  border: Border.all(color: Colors.white10),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: isDestructive
+                      ? Colors.red.withOpacity(0.2)
+                      : Colors.white.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const SizedBox(width: 16),
+              Text(
+                title,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const Spacer(),
+              Icon(
+                Icons.arrow_forward_ios,
+                color: color.withOpacity(0.5),
+                size: 16,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -11,6 +11,7 @@ import 'package:kick_chronicle/modules/highlight/screens/add_highlight_page.dart
 import 'package:kick_chronicle/modules/highlight/screens/import_highlight_page.dart';
 import 'package:kick_chronicle/modules/highlight/screens/admin_highlight_page.dart';
 import 'package:kick_chronicle/modules/auth_profil/screens/login_page.dart';
+import 'package:kick_chronicle/widgets/navbar_user_profile.dart';
 
 class HomePageHighlight extends StatefulWidget {
   const HomePageHighlight({super.key});
@@ -348,49 +349,9 @@ class _HomePageHighlightState extends State<HomePageHighlight> {
             ),
           ],
 
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: PopupMenuButton<String>(
-              offset: const Offset(0, 50),
-              color: const Color(0xFF1F2937),
-              icon: CircleAvatar(
-                radius: 16,
-                backgroundColor: const Color(0xFF2C3246),
-                child: Icon(_isAdmin ? Icons.admin_panel_settings : Icons.person, size: 20, color: Colors.white),
-              ),
-              itemBuilder: (context) => <PopupMenuEntry<String>>[
-                const PopupMenuItem<String>(
-                  value: 'profile',
-                  child: Row(
-                    children: [
-                      Icon(Icons.person_outline, color: Colors.white),
-                      SizedBox(width: 8),
-                      Text("My Profile", style: TextStyle(color: Colors.white)),
-                    ],
-                  ),
-                ),
-                const PopupMenuDivider(height: 1),
-                const PopupMenuItem<String>(
-                  value: 'logout',
-                  child: Row(
-                    children: [
-                      Icon(Icons.logout, color: Colors.red),
-                      SizedBox(width: 8),
-                      Text("Logout", style: TextStyle(color: Colors.red)),
-                    ],
-                  ),
-                ),
-              ],
-              onSelected: (value) {
-                if (value == 'logout') {
-                  _handleLogout(context, request);
-                } else if (value == 'profile') {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Menuju Halaman Profil...")),
-                  );
-                }
-              },
-            ),
+          const Padding(
+            padding: EdgeInsets.only(right: 8.0),
+            child: NavbarUserProfile(), // Gunakan widget yang baru kita buat
           ),
         ],
       ),
