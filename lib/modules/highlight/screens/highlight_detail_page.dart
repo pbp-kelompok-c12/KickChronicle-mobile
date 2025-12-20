@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:kick_chronicle/models/highlight.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import 'package:kick_chronicle/services/komen_like_service.dart';
+import 'package:kick_chronicle/widgets/navbar_user_profile.dart';
 
 class HighlightDetailPage extends StatefulWidget {
   final Highlight highlight;
@@ -14,13 +15,11 @@ class HighlightDetailPage extends StatefulWidget {
 }
 
 class _HighlightDetailPageState extends State<HighlightDetailPage> {
-
   final TextEditingController _commentController = TextEditingController();
   List<Map<String, dynamic>> _comments = [];
   bool _isFavorite = false;
   int _commentsCount = 0;
   int? _userRating = 0;
-
 
   late YoutubePlayerController _controller;
   bool _isPlayerReady = false;
@@ -47,8 +46,7 @@ class _HighlightDetailPageState extends State<HighlightDetailPage> {
       ),
     )..addListener(_listener);
 
-      _loadInitialData();
-
+    _loadInitialData();
   }
 
   void _listener() {
@@ -58,166 +56,177 @@ class _HighlightDetailPageState extends State<HighlightDetailPage> {
   }
 
   Future<void> _loadInitialData() async {
-  final api = ApiMobile.fromContext(context);
-  final highlightId = widget.highlight.id.toString();
+    final api = ApiMobile.fromContext(context);
+    final highlightId = widget.highlight.id.toString();
 
-  final commentRes = await api.getComments(highlightId: highlightId);
-  if (commentRes['ok']) {
+    final commentRes = await api.getComments(highlightId: highlightId);
+    if (commentRes['ok']) {
+      setState(() {
+        _comments = List<Map<String, dynamic>>.from(
+          commentRes['data']['comments'],
+        );
+        _commentsCount = _comments.length;
+      });
+    }
+
+    final favRes = await api.getFavorites();
+    if (favRes['ok']) {
+      final favs = favRes['data']['favorites'] as List;
+      setState(() {
+        _isFavorite = favs.any((f) => f['id'].toString() == highlightId);
+      });
+    }
+
+    final rateRes = await api.getUserRating(highlightId: highlightId);
+    if (rateRes['ok']) {
+      setState(() {
+        _userRating = rateRes['data']['rating'];
+      });
+    }
+  }
+
+  Future<void> _sendComment() async {
+    final api = ApiMobile.fromContext(context);
+    final highlightId = widget.highlight.id.toString();
+    final text = _commentController.text.trim();
+
+    if (text.isEmpty) return;
+
+    final res = await api.addComment(highlightId: highlightId, content: text);
+    if (!res['ok']) return;
+
+    final data = res['data'];
+
     setState(() {
-      _comments = List<Map<String, dynamic>>.from(commentRes['data']['comments']);
-      _commentsCount = _comments.length;
+      _comments.insert(0, {
+        'id': data['id'],
+        'user': data['user'],
+        'content': data['content'],
+        'created_at': data['created_at'],
+      });
+      _commentsCount += 1;
+      _commentController.clear();
     });
   }
 
-  final favRes = await api.getFavorites();
-  if (favRes['ok']) {
-    final favs = favRes['data']['favorites'] as List;
+  Future<void> _toggleFavorite() async {
+    final api = ApiMobile.fromContext(context);
+    final res = await api.toggleFavorite(
+      highlightId: widget.highlight.id.toString(),
+    );
+
+    if (!res['ok']) return;
+
     setState(() {
-      _isFavorite = favs.any((f) => f['id'].toString() == highlightId);
+      _isFavorite = res['data']['favorited'];
     });
   }
 
-  final rateRes = await api.getUserRating(highlightId: highlightId);
-  if (rateRes['ok']) {
-    setState(() {
-      _userRating = rateRes['data']['rating'];
-    });
+  Future<void> _submitRating(int rating) async {
+    final api = ApiMobile.fromContext(context);
+    await api.submitRating(
+      highlightId: widget.highlight.id.toString(),
+      rating: rating,
+    );
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text("Thanks for rating!")));
   }
 
-}
+  Future<int?> _showRatingDialog() async {
+    int selected = _userRating ?? 0;
 
-
-Future<void> _sendComment() async {
-  final api = ApiMobile.fromContext(context);
-  final highlightId = widget.highlight.id.toString();
-  final text = _commentController.text.trim();
-
-  if (text.isEmpty) return;
-
-  final res = await api.addComment(highlightId: highlightId, content: text);
-  if (!res['ok']) return;
-
-  final data = res['data'];
-
-  setState(() {
-    _comments.insert(0, {
-      'id': data['id'],
-      'user': data['user'],
-      'content': data['content'],
-      'created_at': data['created_at'],
-    });
-    _commentsCount += 1;
-    _commentController.clear();
-  });
-}
-
-
-Future<void> _toggleFavorite() async {
-  final api = ApiMobile.fromContext(context);
-  final res = await api.toggleFavorite(highlightId: widget.highlight.id.toString());
-
-  if (!res['ok']) return;
-
-  setState(() {
-    _isFavorite = res['data']['favorited'];
-  });
-}
-
-
-Future<void> _submitRating(int rating) async {
-  final api = ApiMobile.fromContext(context);
-  await api.submitRating(
-    highlightId: widget.highlight.id.toString(),
-    rating: rating,
-  );
-
-  ScaffoldMessenger.of(context)
-      .showSnackBar(const SnackBar(content: Text("Thanks for rating!")));
-}
-
-
-Future<int?> _showRatingDialog() async {
-  int selected = _userRating ?? 0;
-
-  return showDialog<int>(
-    context: context,
-    barrierDismissible: true,
-    builder: (context) {
-      return StatefulBuilder(
-        builder: (context, setDialogState) {
-          return AlertDialog(
-            backgroundColor: const Color(0xFFFFFFFF),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            title: const Center(
-              child: Text(
-                "Rate this Highlight!",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
+    return showDialog<int>(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: const Color(0xFFFFFFFF),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: const Center(
+                child: Text(
+                  "Rate this Highlight!",
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(5, (i) {
-                    final val = i + 1;
-                    return IconButton(
-                      icon: Icon(
-                        Icons.star,
-                        size: 36,
-                        color: val <= selected ? Colors.amber : Colors.grey[400],
-                      ),
-                      onPressed: () {
-                        setDialogState(() {
-                          selected = val;
-                        });
-                      },
-                    );
-                  }),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(5, (i) {
+                      final val = i + 1;
+                      return IconButton(
+                        icon: Icon(
+                          Icons.star,
+                          size: 36,
+                          color: val <= selected
+                              ? Colors.amber
+                              : Colors.grey[400],
+                        ),
+                        onPressed: () {
+                          setDialogState(() {
+                            selected = val;
+                          });
+                        },
+                      );
+                    }),
+                  ),
+                ],
+              ),
+
+              // BUTTONS
+              actionsAlignment: MainAxisAlignment.spaceBetween,
+              actionsPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 8,
+              ),
+
+              actions: [
+                // CANCEL BUTTON
+                TextButton(
+                  onPressed: () => Navigator.pop(context, null),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    backgroundColor: Color(0xFF0000ff),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 10,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text("Cancel"),
+                ),
+
+                TextButton(
+                  onPressed: () => Navigator.pop(context, selected),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    backgroundColor: Color(0xFF0000ff),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 10,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text("Confirm"),
                 ),
               ],
-            ),
-
-            // BUTTONS
-            actionsAlignment: MainAxisAlignment.spaceBetween,
-            actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-
-            actions: [
-              // CANCEL BUTTON
-              TextButton(
-                onPressed: () => Navigator.pop(context, null),
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  backgroundColor: Color(0xFF0000ff),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-                child: const Text("Cancel"),
-              ),
-
-              TextButton(
-                onPressed: () => Navigator.pop(context, selected),
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  backgroundColor: Color(0xFF0000ff),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-                child: const Text("Confirm"),
-              ),
-            ],
-          );
-        },
-      );
-    },
-  );
-}
-
-
+            );
+          },
+        );
+      },
+    );
+  }
 
   @override
   void deactivate() {
@@ -266,53 +275,60 @@ Future<int?> _showRatingDialog() async {
         return Scaffold(
           backgroundColor: const Color(0xFF050505),
           appBar: AppBar(
-            title: Row(
-              children: [
-                Container(
-                  height: 32,
-                  width: 32,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFF06292), Color(0xFFFF8A65)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+            titleSpacing: 0,
+            backgroundColor: Colors.black,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            title: Padding(
+              padding: const EdgeInsets.only(left: 16.0),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    height: 40,
+                    width: 40,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFA855F7), Color(0xFFEC4899)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
                     ),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      "KC",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        fontSize: 14,
+                    child: const Center(
+                      child: Text(
+                        "KC",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontSize: 18,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                const Text(
-                  "Kick Chronicle",
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 18,
-                    letterSpacing: -0.5,
+                  const SizedBox(width: 12),
+                  const Flexible(
+                    fit: FlexFit.loose,
+                    child: Text(
+                      "Kick Chronicle",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                        color: Colors.white,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
+
             actions: [
-              Padding(
-                padding: const EdgeInsets.only(right: 16.0),
-                child: CircleAvatar(
-                  radius: 16,
-                  backgroundColor: const Color(0xFF4F46E5),
-                  child: const Icon(Icons.person, size: 18, color: Colors.white),
-                ),
+              const Padding(
+                padding: EdgeInsets.only(right: 8.0),
+                child: NavbarUserProfile(),
               ),
             ],
-            backgroundColor: const Color(0xFF050505),
-            iconTheme: const IconThemeData(color: Colors.white),
           ),
           body: SingleChildScrollView(
             child: Column(
@@ -342,13 +358,15 @@ Future<int?> _showRatingDialog() async {
                           ),
                           const SizedBox(width: 8),
                           OutlinedButton(
-                            onPressed: ()  async {
+                            onPressed: () async {
                               final rating = await _showRatingDialog();
                               if (rating != null) _submitRating(rating);
                             },
                             style: OutlinedButton.styleFrom(
                               side: const BorderSide(color: Colors.grey),
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
                               foregroundColor: Colors.white,
                             ),
                             child: const Text("Rate"),
@@ -358,10 +376,17 @@ Future<int?> _showRatingDialog() async {
                             onPressed: _toggleFavorite,
                             style: OutlinedButton.styleFrom(
                               side: const BorderSide(color: Colors.grey),
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
                               foregroundColor: Colors.white,
                             ),
-                            icon: Icon(_isFavorite ? Icons.favorite : Icons.favorite_border, size: 18),
+                            icon: Icon(
+                              _isFavorite
+                                  ? Icons.favorite
+                                  : Icons.favorite_border,
+                              size: 18,
+                            ),
                             label: Text(_isFavorite ? "Favorited" : "Favorite"),
                           ),
                         ],
@@ -371,7 +396,11 @@ Future<int?> _showRatingDialog() async {
 
                       const Text(
                         "Description",
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -384,7 +413,11 @@ Future<int?> _showRatingDialog() async {
                       // --- STATISTICS SECTION ---
                       const Text(
                         "Statistic",
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
                       const SizedBox(height: 12),
 
@@ -398,27 +431,40 @@ Future<int?> _showRatingDialog() async {
                           ),
                           child: Column(
                             children: [
-                              _buildStatRow("TEAM", "MATCH", "WIN", "TIE", "LOSE", isHeader: true),
-                              const Divider(height: 1, color: Color(0xFF374151)),
+                              _buildStatRow(
+                                "TEAM",
+                                "MATCH",
+                                "WIN",
+                                "TIE",
+                                "LOSE",
+                                isHeader: true,
+                              ),
+                              const Divider(
+                                height: 1,
+                                color: Color(0xFF374151),
+                              ),
 
                               // Home Row
                               _buildStatRow(
-                                  homeStats.team,
-                                  homeStats.played.toString(),
-                                  homeStats.won.toString(),
-                                  homeStats.drawn.toString(),
-                                  homeStats.lost.toString()
+                                homeStats.team,
+                                homeStats.played.toString(),
+                                homeStats.won.toString(),
+                                homeStats.drawn.toString(),
+                                homeStats.lost.toString(),
                               ),
 
-                              const Divider(height: 1, color: Color(0xFF374151)),
+                              const Divider(
+                                height: 1,
+                                color: Color(0xFF374151),
+                              ),
 
                               // Away Row
                               _buildStatRow(
-                                  awayStats.team,
-                                  awayStats.played.toString(),
-                                  awayStats.won.toString(),
-                                  awayStats.drawn.toString(),
-                                  awayStats.lost.toString()
+                                awayStats.team,
+                                awayStats.played.toString(),
+                                awayStats.won.toString(),
+                                awayStats.drawn.toString(),
+                                awayStats.lost.toString(),
                               ),
                             ],
                           ),
@@ -458,15 +504,28 @@ Future<int?> _showRatingDialog() async {
                               children: [
                                 const Text(
                                   "Comments",
-                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
                                 ),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFF374151),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  child:  Text("$_commentsCount Comments", style: TextStyle(color: Colors.grey, fontSize: 12)),
+                                  child: Text(
+                                    "$_commentsCount Comments",
+                                    style: TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 12,
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
@@ -481,14 +540,19 @@ Future<int?> _showRatingDialog() async {
                                     style: const TextStyle(color: Colors.white),
                                     decoration: InputDecoration(
                                       hintText: "Write a comment...",
-                                      hintStyle: TextStyle(color: Colors.grey[600]),
+                                      hintStyle: TextStyle(
+                                        color: Colors.grey[600],
+                                      ),
                                       filled: true,
                                       fillColor: const Color(0xFF1F2937),
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(8),
                                         borderSide: BorderSide.none,
                                       ),
-                                      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                          ),
                                     ),
                                   ),
                                 ),
@@ -498,7 +562,10 @@ Future<int?> _showRatingDialog() async {
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFF4F46E5),
                                     foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 14,
+                                    ),
                                   ),
                                   child: const Text("Send"),
                                 ),
@@ -508,17 +575,32 @@ Future<int?> _showRatingDialog() async {
                             const SizedBox(height: 24),
 
                             // Empty State
-                    if (_comments.isEmpty)
-                      const Center(child: Text("No comments yet.", style: TextStyle(color: Colors.grey)))
-                    else
-                      Column(
-                        children: _comments.map((c) {
-                          return ListTile(
-                            title: Text(c['user'], style: const TextStyle(color: Colors.white)),
-                            subtitle: Text(c['content'], style: const TextStyle(color: Colors.grey)),
-                          );
-                        }).toList(),
-                      ),
+                            if (_comments.isEmpty)
+                              const Center(
+                                child: Text(
+                                  "No comments yet.",
+                                  style: TextStyle(color: Colors.grey),
+                                ),
+                              )
+                            else
+                              Column(
+                                children: _comments.map((c) {
+                                  return ListTile(
+                                    title: Text(
+                                      c['user'],
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    subtitle: Text(
+                                      c['content'],
+                                      style: const TextStyle(
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
 
                             const SizedBox(height: 8),
                           ],
@@ -535,7 +617,14 @@ Future<int?> _showRatingDialog() async {
     );
   }
 
-  Widget _buildStatRow(String col1, String col2, String col3, String col4, String col5, {bool isHeader = false}) {
+  Widget _buildStatRow(
+    String col1,
+    String col2,
+    String col3,
+    String col4,
+    String col5, {
+    bool isHeader = false,
+  }) {
     TextStyle style = TextStyle(
       color: isHeader ? Colors.grey[400] : Colors.white,
       fontWeight: isHeader ? FontWeight.bold : FontWeight.normal,
@@ -547,10 +636,18 @@ Future<int?> _showRatingDialog() async {
       child: Row(
         children: [
           Expanded(flex: 3, child: Text(isHeader ? col1 : col1, style: style)),
-          Expanded(child: Center(child: Text(col2, style: style))),
-          Expanded(child: Center(child: Text(col3, style: style))),
-          Expanded(child: Center(child: Text(col4, style: style))),
-          Expanded(child: Center(child: Text(col5, style: style))),
+          Expanded(
+            child: Center(child: Text(col2, style: style)),
+          ),
+          Expanded(
+            child: Center(child: Text(col3, style: style)),
+          ),
+          Expanded(
+            child: Center(child: Text(col4, style: style)),
+          ),
+          Expanded(
+            child: Center(child: Text(col5, style: style)),
+          ),
         ],
       ),
     );
