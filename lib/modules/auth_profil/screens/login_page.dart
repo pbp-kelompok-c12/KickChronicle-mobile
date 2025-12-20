@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:kick_chronicle/modules/highlight/screens/home_page_highlight.dart';
 import 'package:kick_chronicle/screens/home_page.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:kick_chronicle/modules/auth_profil/screens/register_page.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:kick_chronicle/modules/highlight/screens/home_page_highlight.dart';
 
 // Import khusus Web
 import 'package:google_sign_in_platform_interface/google_sign_in_platform_interface.dart';

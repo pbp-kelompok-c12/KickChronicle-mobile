@@ -6,12 +6,13 @@
 
 #include "generated_plugin_registrant.h"
 
-#include <flutter_inappwebview_windows/flutter_inappwebview_windows_plugin_c_api.h>
+#include <file_selector_windows/file_selector_windows.h>
 #include <url_launcher_windows/url_launcher_windows.h>
 
 void RegisterPlugins(flutter::PluginRegistry* registry) {
-  FlutterInappwebviewWindowsPluginCApiRegisterWithRegistrar(
-      registry->GetRegistrarForPlugin("FlutterInappwebviewWindowsPluginCApi"));
+  FileSelectorWindowsRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("FileSelectorWindows"));
   UrlLauncherWindowsRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("UrlLauncherWindows"));
 }
+
