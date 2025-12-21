@@ -94,3 +94,9 @@ Aplikasi Flutter ini beroperasi sebagai **Client** yang sepenuhnya bergantung pa
 ## 🎨 Link Figma
 
 **Link Figma:** `https://www.figma.com/design/TIgzIwJN8EFOYjLH42A5P7/Flutter-Kick-Chronicle?node-id=0-1&m=dev&t=43PBPB8JzqbaSMip-1`
+
+## Link Video Drive
+**Link Video:** `https://drive.google.com/file/d/1wToY5clTk2Ph2wjQULw0hJuB9hY8IJSv/view?usp=drive_link`
+
+## Link App
+**Link App:** `https://drive.google.com/file/d/1wToY5clTk2Ph2wjQULw0hJuB9hY8IJSv/view?usp=drive_link`

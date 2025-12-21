@@ -93,10 +93,8 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  // --- LOGIKA: Handle Klik Tombol Google ---
   Future<void> _handleGoogleSignIn() async {
     try {
-      // Ini akan memicu pop-up pilih akun
       final GoogleSignInAccount? account = await _googleSignIn.signIn();
       if (account != null) {
         await _handleGoogleLoginResult(account);
@@ -106,7 +104,6 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  // --- LOGIKA: Handle Login Manual (Username/Pass) ---
   Future<void> _handleManualLogin() async {
     setState(() => _isLoading = true);
     final request = context.read<CookieRequest>();

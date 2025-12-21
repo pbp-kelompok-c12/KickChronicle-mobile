@@ -205,7 +205,6 @@ class _ProfilePageState extends State<ProfilePage> {
         ],
       ),
       body: isLoading
-          // [UBAH WARNA DISINI]
           ? const Center(
               child: CircularProgressIndicator(color: Color(0xFF4F46E5)),
             )
@@ -229,14 +228,12 @@ class _ProfilePageState extends State<ProfilePage> {
                           padding: const EdgeInsets.all(4),
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            // [UBAH WARNA DISINI]
                             border: Border.all(
                               color: const Color(0xFF4F46E5),
                               width: 3,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                // [UBAH WARNA DISINI]
                                 color: const Color(0xFF4F46E5).withOpacity(0.3),
                                 blurRadius: 15,
                                 spreadRadius: 2,
@@ -265,7 +262,6 @@ class _ProfilePageState extends State<ProfilePage> {
                   const SizedBox(height: 4),
                   Text(
                     "@${userProfile!.username}",
-                    // [UBAH WARNA DISINI]
                     style: const TextStyle(
                       fontSize: 16,
                       color: Color(0xFF4F46E5),

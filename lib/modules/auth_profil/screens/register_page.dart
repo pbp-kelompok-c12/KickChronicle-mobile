@@ -15,13 +15,12 @@ class RegisterPage extends StatefulWidget {
 class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController =
-      TextEditingController(); // Controller Email Baru
+      TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _passwordConfirmController =
       TextEditingController();
   bool _isLoading = false;
 
-  // Warna custom sesuai desain
   final Color _inputFillColor = const Color(0xFF2C3246);
   final Color _buttonColor = const Color(0xFF4F46E5);
 
@@ -50,7 +49,6 @@ class _RegisterPageState extends State<RegisterPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Logo KC
                 Container(
                   height: 70,
                   width: 70,
@@ -90,7 +88,6 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 const SizedBox(height: 40),
 
-                // Form Container
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
@@ -99,7 +96,6 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                   child: Column(
                     children: [
-                      // --- Username ---
                       _buildTextField(
                         controller: _usernameController,
                         label: "Username",
@@ -107,7 +103,6 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
                       const SizedBox(height: 16),
 
-                      // --- Email (BARU) ---
                       _buildTextField(
                         controller: _emailController,
                         label: "Email",
@@ -116,7 +111,6 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
                       const SizedBox(height: 16),
 
-                      // --- Password ---
                       _buildTextField(
                         controller: _passwordController,
                         label: "Password",
@@ -125,7 +119,6 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
                       const SizedBox(height: 16),
 
-                      // --- Confirm Password ---
                       _buildTextField(
                         controller: _passwordConfirmController,
                         label: "Password confirmation",
@@ -134,7 +127,6 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
                       const SizedBox(height: 30),
 
-                      // --- Button Register ---
                       SizedBox(
                         width: double.infinity,
                         height: 50,
@@ -145,7 +137,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                   setState(() => _isLoading = true);
                                   String username = _usernameController.text;
                                   String email =
-                                      _emailController.text; // Ambil Email
+                                      _emailController.text;
                                   String password = _passwordController.text;
                                   String passwordConfirm =
                                       _passwordConfirmController.text;
@@ -158,7 +150,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                       url,
                                       jsonEncode(<String, String>{
                                         'username': username,
-                                        'email': email, // Kirim Email
+                                        'email': email,
                                         'password': password,
                                         'passwordConfirm': passwordConfirm,
                                       }),
@@ -257,7 +249,6 @@ class _RegisterPageState extends State<RegisterPage> {
 
                 const SizedBox(height: 30),
 
-                // Footer Link
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
