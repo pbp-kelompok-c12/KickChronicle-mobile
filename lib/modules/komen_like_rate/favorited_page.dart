@@ -5,6 +5,7 @@ import 'package:kick_chronicle/modules/highlight/widgets/match_card.dart';
 import 'package:kick_chronicle/services/komen_like_service.dart';
 import 'package:kick_chronicle/utils/constants.dart';
 import 'package:kick_chronicle/widgets/left_drawer.dart';
+import 'package:kick_chronicle/widgets/navbar_user_profile.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -161,7 +162,7 @@ class _FavoritedPageState extends State<FavoritedPage> {
                   ),
                   const SizedBox(width: 12),
                   const Text(
-                    "Favorited Matches",
+                    "Kick Chronicle",
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 20,
@@ -189,36 +190,9 @@ class _FavoritedPageState extends State<FavoritedPage> {
             onPressed: () => Navigator.pushNamed(context, "/add-highlight"),
           ),
         ],
-        Padding(
-          padding: const EdgeInsets.only(right: 16),
-          child: PopupMenuButton<String>(
-            offset: const Offset(0, 50),
-            color: const Color(0xFF1F2937),
-            icon: CircleAvatar(
-              radius: 16,
-              backgroundColor: const Color(0xFF2C3246),
-              child: Icon(
-                _isAdmin ? Icons.admin_panel_settings : Icons.person,
-                size: 20,
-                color: Colors.white,
-              ),
-            ),
-            onSelected: (value) {
-              if (value == "logout") _handleLogout();
-            },
-            itemBuilder: (context) => const [
-              PopupMenuItem(
-                value: "logout",
-                child: Row(
-                  children: [
-                    Icon(Icons.logout, color: Colors.red),
-                    SizedBox(width: 8),
-                    Text("Logout", style: TextStyle(color: Colors.red)),
-                  ],
-                ),
-              ),
-            ],
-          ),
+        const Padding(
+          padding: EdgeInsets.only(right: 8.0),
+          child: NavbarUserProfile(), // Gunakan widget yang baru kita buat
         ),
       ],
     );
