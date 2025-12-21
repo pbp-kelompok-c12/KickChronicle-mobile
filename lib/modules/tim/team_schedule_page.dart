@@ -4,6 +4,7 @@ import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:provider/provider.dart';
 
 import 'package:kick_chronicle/models/calendar_model.dart';
+import 'package:kick_chronicle/modules/kalender/detail_schedule.dart';
 import 'package:kick_chronicle/utils/constants.dart';
 
 class TeamSchedulePage extends StatefulWidget {
@@ -66,13 +67,7 @@ class _TeamSchedulePageState extends State<TeamSchedulePage> {
   Widget _matchCard(Match match) {
     final timeString = DateFormat('HH:mm').format(match.date);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey[850],
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white12),
-      ),
-      margin: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 8.0),
+    final cardContent = Padding(
       padding: const EdgeInsets.all(12.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -127,6 +122,30 @@ class _TeamSchedulePageState extends State<TeamSchedulePage> {
             ),
           ),
         ],
+      ),
+    );
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey[850],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.white12),
+      ),
+      margin: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 8.0),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => DetailSchedulePage(match: match),
+              ),
+            );
+          },
+          child: cardContent,
+        ),
       ),
     );
   }
