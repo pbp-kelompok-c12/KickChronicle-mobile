@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:kick_chronicle/utils/constants.dart';
 import 'package:provider/provider.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 
@@ -35,7 +36,7 @@ class _AddHighlightPageState extends State<AddHighlightPage> {
 
     final request = context.read<CookieRequest>();
     
-    const url = 'http://127.0.0.1:8000/add-highlight-flutter/';
+    final url = "${ApiConfig.baseUrl}/add-highlight-flutter/";
 
     final response = await request.postJson(
       url,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:kick_chronicle/utils/constants.dart';
 import 'package:provider/provider.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -124,7 +125,7 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
 
     final request = context.read<CookieRequest>();
 
-    String baseUrl = kIsWeb ? "http://127.0.0.1:8000" : "http://10.0.2.2:8000";
+    String baseUrl = ApiConfig.baseUrl;
     String addMatchUrl = "$baseUrl/kalender/add/"; 
 
     try {

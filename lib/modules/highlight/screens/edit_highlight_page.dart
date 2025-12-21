@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:kick_chronicle/utils/constants.dart';
 import 'package:provider/provider.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:kick_chronicle/models/highlight.dart';
@@ -60,7 +61,8 @@ class _EditHighlightPageState extends State<EditHighlightPage> {
     final request = context.read<CookieRequest>();
 
     // Replace with your actual local IP/URL
-    final url = 'http://127.0.0.1:8000/edit-highlight-flutter/${widget.highlight.id}/';
+    final url =
+        "${ApiConfig.baseUrl}/edit-highlight-flutter/${widget.highlight.id}/";
 
     final response = await request.postJson(
       url,

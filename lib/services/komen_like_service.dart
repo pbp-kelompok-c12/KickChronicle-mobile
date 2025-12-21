@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart';
 import 'package:provider/provider.dart';
-
+import 'package:kick_chronicle/utils/constants.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 
 class ApiMobile {
@@ -14,7 +14,7 @@ class ApiMobile {
 
   factory ApiMobile.fromContext(BuildContext context) {
     final req = context.read<CookieRequest>();
-    final base = kIsWeb ? "http://127.0.0.1:8000" : "http://10.0.2.2:8000";
+    final base = ApiConfig.baseUrl;
     return ApiMobile._(req, base);
   }
 
@@ -123,11 +123,7 @@ print(endDate);
     }
   }
 
-
- 
-
-  
-   Future<Map<String, dynamic>> getUserRating({
+  Future<Map<String, dynamic>> getUserRating({
     required String highlightId,
   }) async {
     final url = _url("komen/mobile/rating/$highlightId/");

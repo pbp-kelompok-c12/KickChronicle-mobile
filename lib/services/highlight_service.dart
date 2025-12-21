@@ -1,11 +1,12 @@
 import 'dart:convert';
 import 'package:kick_chronicle/models/highlight.dart';
+import 'package:kick_chronicle/utils/constants.dart';
 import 'package:provider/provider.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 
 // Updated to accept a page number for pagination
 Future<List<Highlight>> fetchHighlights(CookieRequest request, {int page = 1,String query = ''}) async {
-  String baseUrl = 'http://127.0.0.1:8000/highlights-json/';
+  String baseUrl = "${ApiConfig.baseUrl}/highlights-json/";
 
   String url = '$baseUrl?page=$page';
   if (query.isNotEmpty) {

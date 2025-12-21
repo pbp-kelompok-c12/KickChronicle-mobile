@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:kick_chronicle/utils/constants.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -76,7 +77,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     setState(() => _isLoading = true);
     final request = context.read<CookieRequest>();
 
-    String baseUrl = kIsWeb ? "http://127.0.0.1:8000" : "http://10.0.2.2:8000";
+    String baseUrl = ApiConfig.baseUrl;
     String url = "$baseUrl/auth/mobile/profile/edit/";
 
     Map<String, dynamic> data = {
@@ -286,9 +287,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
     if (widget.userProfile.imageUrl != null &&
         widget.userProfile.imageUrl!.isNotEmpty) {
-      String baseUrl = kIsWeb
-          ? "http://127.0.0.1:8000"
-          : "http://10.0.2.2:8000";
+      String baseUrl = ApiConfig.baseUrl;
       String url =
           "$baseUrl${widget.userProfile.imageUrl!}?v=${DateTime.now().millisecondsSinceEpoch}";
       return NetworkImage(url);

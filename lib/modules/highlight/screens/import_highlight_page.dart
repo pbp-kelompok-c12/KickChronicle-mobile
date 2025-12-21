@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:kick_chronicle/utils/constants.dart';
 import 'package:provider/provider.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:http/http.dart' as http;
@@ -43,12 +44,7 @@ class _ImportHighlightPageState extends State<ImportHighlightPage> {
     // --- FIX 1: URL CONSISTENCY ---
     // If you run your Flutter app on 'localhost', you MUST send requests to 'localhost'.
     // If you send them to '127.0.0.1', the browser will BLOCK your cookies.
-    String url;
-    if (kIsWeb) {
-      url = 'http://127.0.0.1:8000/add-highlights-csv-flutter/';
-    } else {
-      url = 'http://127.0.0.1:8000/add-highlights-csv-flutter/';
-    }
+    String url = "${ApiConfig.baseUrl}/add-highlights-csv-flutter/";
 
     try {
       var uri = Uri.parse(url);
