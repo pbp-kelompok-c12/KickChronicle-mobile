@@ -8,10 +8,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:kick_chronicle/modules/auth_profil/screens/register_page.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-
-// Import khusus Web
-import 'package:google_sign_in_platform_interface/google_sign_in_platform_interface.dart';
-import 'package:google_sign_in_web/google_sign_in_web.dart' as web;
 import 'package:kick_chronicle/modules/auth_profil/screens/forgot_password_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -35,6 +31,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
+    // Kode ini aman karena signInSilently ada di library standar
     if (kIsWeb) {
       _googleSignIn.onCurrentUserChanged.listen((GoogleSignInAccount? account) {
         if (account != null) {
@@ -53,7 +50,9 @@ class _LoginPageState extends State<LoginPage> {
     try {
       final GoogleSignInAuthentication auth = await account.authentication;
       String baseUrl = ApiConfig.baseUrl;
-      String url = "$baseUrl/auth/mobile/google-login/";
+
+      // Gunakan endpoint flutter yang sudah kita siapkan
+      String url = "$baseUrl/auth/google-login-flutter/";
 
       final response = await request.postJson(
         url,
@@ -61,6 +60,7 @@ class _LoginPageState extends State<LoginPage> {
           'email': account.email,
           'id_token': auth.idToken ?? "",
           'access_token': auth.accessToken ?? "",
+          'photoUrl': account.photoUrl ?? "", 
         }),
       );
 
@@ -91,16 +91,16 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  // Handle Google
-  // --- LOGIKA: Handle Klik Google Mobile ---
-  Future<void> _handleMobileSignIn() async {
+  // --- LOGIKA: Handle Klik Google (Mobile & Web) ---
+  // Fungsi ini bisa dipakai di Mobile maupun Web (Pop-up)
+  Future<void> _handleGoogleSignIn() async {
     try {
       final GoogleSignInAccount? account = await _googleSignIn.signIn();
       if (account != null) {
         await _handleGoogleLoginResult(account);
       }
     } catch (error) {
-      print("Error Google Sign In Mobile: $error");
+      print("Error Google Sign In: $error");
     }
   }
 
@@ -118,14 +118,15 @@ class _LoginPageState extends State<LoginPage> {
       });
 
       if (request.loggedIn) {
-        if (mounted)
+        if (mounted) {
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(const SnackBar(content: Text("Login berhasil!")));
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomePageHighlight()),
-        );
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const HomePageHighlight()),
+          );
+        }
       } else {
         if (mounted)
           ScaffoldMessenger.of(context).showSnackBar(
@@ -142,20 +143,14 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  Widget _buildGoogleWebButton() {
-    return (GoogleSignInPlatform.instance as web.GoogleSignInPlugin)
-        .renderButton();
-  }
-
   // --- UI DESIGN UTAMA ---
   @override
   Widget build(BuildContext context) {
-    // Warna custom sesuai desain KickChronicle
-    const Color inputFillColor = Color(0xFF2C3246); // Abu-abu gelap/biru
-    const Color buttonColor = Color(0xFF4F46E5); // Ungu/Biru terang
+    const Color inputFillColor = Color(0xFF2C3246);
+    const Color buttonColor = Color(0xFF4F46E5);
 
     return Scaffold(
-      backgroundColor: Colors.black, // Background Hitam
+      backgroundColor: Colors.black,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40.0),
@@ -164,16 +159,12 @@ class _LoginPageState extends State<LoginPage> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // 1. Logo / Judul
-              // Jika Anda punya gambar logo, ganti Icon di bawah dengan Image.asset(...)
               Container(
                 height: 80,
                 width: 80,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFFA855F7),
-                      Color(0xFFEC4899),
-                    ], // Gradient ungu-pink
+                    colors: [Color(0xFFA855F7), Color(0xFFEC4899)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -220,7 +211,7 @@ class _LoginPageState extends State<LoginPage> {
                 fillColor: inputFillColor,
               ),
 
-              // 3. Tombol Forgot Password (Opsional, visual only)
+              // 3. Tombol Forgot Password
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
@@ -284,37 +275,29 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 30),
 
-              // 6. Tombol Google
-              if (kIsWeb)
-                Container(
-                  height: 50,
-                  width: double.infinity,
-                  alignment: Alignment.center,
-                  child: _buildGoogleWebButton(),
-                )
-              else
-                OutlinedButton.icon(
-                  onPressed: _handleMobileSignIn,
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: Colors.black,
-                    foregroundColor: Colors.white,
-                    side: BorderSide(color: Colors.grey[800]!),
-                    minimumSize: const Size.fromHeight(55),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  // Ganti Icon ini dengan Image.asset('assets/google.png') jika punya
-                  icon: const Icon(
-                    Icons.g_mobiledata,
-                    size: 32,
-                    color: Colors.white,
-                  ),
-                  label: const Text(
-                    "Google",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              // 6. Tombol Google (Universal)
+              // Kita gunakan tombol custom ini untuk Web maupun Mobile
+              OutlinedButton.icon(
+                onPressed: _handleGoogleSignIn, // Panggil fungsi yang sama
+                style: OutlinedButton.styleFrom(
+                  backgroundColor: Colors.black,
+                  foregroundColor: Colors.white,
+                  side: BorderSide(color: Colors.grey[800]!),
+                  minimumSize: const Size.fromHeight(55),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
+                icon: const Icon(
+                  Icons.g_mobiledata,
+                  size: 32,
+                  color: Colors.white,
+                ),
+                label: const Text(
+                  "Google",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
 
               const SizedBox(height: 40),
 
@@ -352,7 +335,6 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  // Widget Helper untuk Text Field yang rapi
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
