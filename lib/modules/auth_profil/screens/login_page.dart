@@ -236,7 +236,7 @@ class _LoginPageState extends State<LoginPage> {
                   child: const Text(
                     "Forgot Password?",
                     style: TextStyle(
-                      color: Color(0xFF4F46E5),
+                      color: Color(0xFFFB4300),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -379,9 +379,7 @@ class _LoginPageState extends State<LoginPage> {
           decoration: InputDecoration(
             filled: true,
             fillColor: fillColor,
-            hintText: isPassword
-                ? '........'
-                : '', // Placeholder dot untuk password
+            hintText: isPassword ? '........' : 'PakBepe',
             hintStyle: const TextStyle(color: Colors.grey),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
