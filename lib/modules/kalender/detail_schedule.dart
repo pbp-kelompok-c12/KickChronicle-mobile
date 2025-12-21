@@ -31,8 +31,34 @@ class DetailSchedulePage extends StatelessWidget {
 
   Widget _buildLogo(String? url) {
     if (url != null && url.isNotEmpty) {
+      if (url.startsWith('assets')) {
+        return Image.asset(
+          url,
+          height: 60,
+          width: 60,
+          fit: BoxFit.contain,
+          errorBuilder: (c, o, s) => Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade600,
+              borderRadius: BorderRadius.circular(30),
+              border: Border.all(color: Colors.grey.shade500),
+            ),
+            child: const Icon(
+              Icons.shield_outlined,
+              size: 40,
+              color: Colors.white70,
+            ),
+          ),
+        );
+      }
+
+      final String fullUrl =
+          url.startsWith('http') ? url : baseHost + url;
+
       return Image.network(
-        url,
+        fullUrl,
         height: 60,
         width: 60,
         fit: BoxFit.contain,

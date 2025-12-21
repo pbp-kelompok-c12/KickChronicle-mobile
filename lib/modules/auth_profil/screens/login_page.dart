@@ -1,16 +1,17 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:kick_chronicle/modules/highlight/screens/home_page_highlight.dart';
 import 'package:kick_chronicle/screens/home_page.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:kick_chronicle/modules/auth_profil/screens/register_page.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:kick_chronicle/modules/highlight/screens/home_page_highlight.dart';
 
 // Import khusus Web
 import 'package:google_sign_in_platform_interface/google_sign_in_platform_interface.dart';
 import 'package:google_sign_in_web/google_sign_in_web.dart' as web;
+import 'package:kick_chronicle/modules/auth_profil/screens/forgot_password_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -69,7 +70,10 @@ class _LoginPageState extends State<LoginPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text("Selamat datang, ${response['username']}!")),
           );
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomePageHighlight()));
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const HomePageHighlight()),
+          );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text("Gagal login: ${response['message']}")),
@@ -87,7 +91,7 @@ class _LoginPageState extends State<LoginPage> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
-  
+
   // Handle Google
   // --- LOGIKA: Handle Klik Google Mobile ---
   Future<void> _handleMobileSignIn() async {
@@ -119,7 +123,10 @@ class _LoginPageState extends State<LoginPage> {
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(const SnackBar(content: Text("Login berhasil!")));
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomePageHighlight()));
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomePageHighlight()),
+        );
       } else {
         if (mounted)
           ScaffoldMessenger.of(context).showSnackBar(
@@ -218,10 +225,20 @@ class _LoginPageState extends State<LoginPage> {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: () {}, // Tambahkan logika jika perlu
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ForgotPasswordPage(),
+                      ),
+                    );
+                  },
                   child: const Text(
-                    "Forgot password?",
-                    style: TextStyle(color: Colors.deepOrange),
+                    "Forgot Password?",
+                    style: TextStyle(
+                      color: Color(0xFF4F46E5),
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
