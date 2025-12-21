@@ -1,44 +1,26 @@
 {
   "project_info": {
-    "project_number": "935238606733",
-    "project_id": "kick-chronicle-app",
-    "storage_bucket": "kick-chronicle-app.firebasestorage.app"
+    "project_number": "215500238724",
+    "project_id": "kick-chronicle-mobile",
+    "storage_bucket": "kick-chronicle-mobile.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:935238606733:android:b16b368102f77a162527c4",
+        "mobilesdk_app_id": "1:215500238724:android:e3f783f6c131478514f7d1",
         "android_client_info": {
           "package_name": "com.example.kick_chronicle"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "935238606733-aret5tv4g3k0v0dnmdfjhl8arlnf03gr.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.example.kick_chronicle",
-            "certificate_hash": "7faa2500e91db8f37299ded95a5eee760c39e8bd"
-          }
-        },
-        {
-          "client_id": "935238606733-r2o3ii14m8ns65r9all4d0jcst0s3rld.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCjoIUb3vO_UfRDsEcJvJrS_I8cj3eOlwA"
+          "current_key": "AIzaSyDfeRXYCqAmRD80TWryRG5YTjXf7pRT2P0"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "935238606733-r2o3ii14m8ns65r9all4d0jcst0s3rld.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }
