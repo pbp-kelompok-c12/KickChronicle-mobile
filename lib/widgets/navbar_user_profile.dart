@@ -5,6 +5,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:kick_chronicle/modules/auth_profil/screens/profile_page.dart';
 import 'package:kick_chronicle/modules/auth_profil/screens/login_page.dart';
+import 'package:kick_chronicle/modules/komen_like_rate/favorited_page.dart';
 
 class NavbarUserProfile extends StatefulWidget {
   const NavbarUserProfile({super.key});
@@ -155,6 +156,11 @@ class _NavbarUserProfileState extends State<NavbarUserProfile> {
               MaterialPageRoute(builder: (context) => const ProfilePage()),
             );
             _fetchDjangoProfileImage();
+          } else if (value == 'favorite') {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const FavoritedPage()),
+            );
           } else if (value == 'logout') {
             _handleLogout(context);
           }
@@ -167,6 +173,17 @@ class _NavbarUserProfileState extends State<NavbarUserProfile> {
                 Icon(Icons.person, color: Colors.white, size: 20),
                 SizedBox(width: 12),
                 Text('My Profile', style: TextStyle(color: Colors.white)),
+              ],
+            ),
+          ),
+          const PopupMenuDivider(height: 1),
+          const PopupMenuItem(
+            value: 'favorite',
+            child: Row(
+              children: [
+                Icon(Icons.favorite, color: Colors.white, size: 20),
+                SizedBox(width: 12),
+                Text('Favorit', style: TextStyle(color: Colors.white)),
               ],
             ),
           ),

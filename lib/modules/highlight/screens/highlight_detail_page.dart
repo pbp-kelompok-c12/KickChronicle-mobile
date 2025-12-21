@@ -229,8 +229,9 @@ Future<void> _sendComment() async {
                         icon: Icon(
                           Icons.star,
                           size: 36,
-                          color:
-                          val <= selected ? Colors.amber : Colors.grey[400],
+                          color: val <= selected
+                              ? Colors.amber
+                              : Colors.grey[400],
                         ),
                         onPressed: () {
                           setDialogState(() {
@@ -334,10 +335,7 @@ Future<void> _sendComment() async {
           },
         ),
         builder: (context, player) {
-          return _buildPageBody(
-            context: context,
-            playerWidget: player,
-          );
+          return _buildPageBody(context: context, playerWidget: player);
         },
       );
     }
@@ -361,51 +359,8 @@ Future<void> _sendComment() async {
           padding: const EdgeInsets.only(left: 16.0),
           child: Row(
             mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                height: 40,
-                width: 40,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFA855F7), Color(0xFFEC4899)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: const Center(
-                  child: Text(
-                    "KC",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      fontSize: 18,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Flexible(
-                fit: FlexFit.loose,
-                child: Text(
-                  "Kick Chronicle",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
-                    color: Colors.white,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
           ),
         ),
-        actions: [
-          const Padding(
-            padding: EdgeInsets.only(right: 8.0),
-            child: NavbarUserProfile(),
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -457,7 +412,9 @@ Future<void> _sendComment() async {
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(color: Colors.grey),
                           padding: const EdgeInsets.symmetric(horizontal: 12),
-                          foregroundColor: Colors.white,
+                          foregroundColor: _isFavorite
+                              ? const Color.fromARGB(255, 255, 234, 0)
+                              : Colors.white,
                         ),
                         icon: Icon(
                           _isFavorite ? Icons.favorite : Icons.favorite_border,
@@ -603,9 +560,7 @@ Future<void> _sendComment() async {
                                 style: const TextStyle(color: Colors.white),
                                 decoration: InputDecoration(
                                   hintText: "Write a comment...",
-                                  hintStyle: TextStyle(
-                                    color: Colors.grey[600],
-                                  ),
+                                  hintStyle: TextStyle(color: Colors.grey[600]),
                                   filled: true,
                                   fillColor: const Color(0xFF1F2937),
                                   border: OutlineInputBorder(
@@ -696,20 +651,15 @@ Future<void> _sendComment() async {
                           )
                         else
                           Column(
-                            children:
-                            _comments.map((c) {
+                            children: _comments.map((c) {
                               return ListTile(
                                 title: Text(
                                   c['user'],
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                  ),
+                                  style: const TextStyle(color: Colors.white),
                                 ),
                                 subtitle: Text(
                                   c['content'],
-                                  style: const TextStyle(
-                                    color: Colors.grey,
-                                  ),
+                                  style: const TextStyle(color: Colors.grey),
                                 ),
                               );
                             }).toList(),
@@ -728,13 +678,13 @@ Future<void> _sendComment() async {
   }
 
   Widget _buildStatRow(
-      String col1,
-      String col2,
-      String col3,
-      String col4,
-      String col5, {
-        bool isHeader = false,
-      }) {
+    String col1,
+    String col2,
+    String col3,
+    String col4,
+    String col5, {
+    bool isHeader = false,
+  }) {
     TextStyle style = TextStyle(
       color: isHeader ? Colors.grey[400] : Colors.white,
       fontWeight: isHeader ? FontWeight.bold : FontWeight.normal,
@@ -746,10 +696,18 @@ Future<void> _sendComment() async {
       child: Row(
         children: [
           Expanded(flex: 3, child: Text(isHeader ? col1 : col1, style: style)),
-          Expanded(child: Center(child: Text(col2, style: style))),
-          Expanded(child: Center(child: Text(col3, style: style))),
-          Expanded(child: Center(child: Text(col4, style: style))),
-          Expanded(child: Center(child: Text(col5, style: style))),
+          Expanded(
+            child: Center(child: Text(col2, style: style)),
+          ),
+          Expanded(
+            child: Center(child: Text(col3, style: style)),
+          ),
+          Expanded(
+            child: Center(child: Text(col4, style: style)),
+          ),
+          Expanded(
+            child: Center(child: Text(col5, style: style)),
+          ),
         ],
       ),
     );
