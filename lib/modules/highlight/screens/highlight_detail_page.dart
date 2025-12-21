@@ -4,7 +4,6 @@ import 'package:kick_chronicle/models/highlight.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart' as mobile;
 import 'package:youtube_player_iframe/youtube_player_iframe.dart' as iframe;
 import 'package:kick_chronicle/services/komen_like_service.dart';
-import 'package:kick_chronicle/widgets/navbar_user_profile.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 class HighlightDetailPage extends StatefulWidget {
@@ -23,9 +22,9 @@ class _HighlightDetailPageState extends State<HighlightDetailPage> {
   int _commentsCount = 0;
   int? _userRating = 0;
 
-  // Mobile Controller (nullable)
+  // Mobile Controller
   mobile.YoutubePlayerController? _mobileController;
-  // Web Controller (nullable)
+  // Web Controller
   iframe.YoutubePlayerController? _webController;
 
   bool _isPlayerReady = false;
@@ -75,6 +74,51 @@ class _HighlightDetailPageState extends State<HighlightDetailPage> {
     }
   }
 
+  // --- HELPER 1: CACHE BUSTING UNTUK AVATAR ---
+  String _getAvatarUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+    // Jika URL relative (misal /media/...), biarkan apa adanya atau tambahkan base URL jika perlu
+    // Di sini kita asumsikan URL valid, kita hanya tambah timestamp cache busting
+    if (url.contains('?')) {
+      return "$url&v=${DateTime.now().millisecondsSinceEpoch}";
+    }
+    return "$url?v=${DateTime.now().millisecondsSinceEpoch}";
+  }
+
+  // --- HELPER 2: RELATIVE TIME (FIXED TIMEZONE BUG) ---
+  String _timeAgo(String? dateString) {
+    if (dateString == null || dateString.isEmpty) return 'Just now';
+    try {
+      // 1. Parse string ke DateTime
+      // PENTING: Jika Django mengirim waktu UTC 'naive' (tanpa Z), Flutter menganggapnya Local.
+      // Kita paksa anggap UTC dulu jika perlu, lalu convert ke Local.
+      DateTime date;
+      if (!dateString.endsWith('Z')) {
+        // Asumsikan backend kirim UTC tapi lupa 'Z', kita tambahkan manual
+        date = DateTime.parse("${dateString}Z").toLocal();
+      } else {
+        date = DateTime.parse(dateString).toLocal();
+      }
+
+      final DateTime now = DateTime.now();
+      final Duration diff = now.difference(date);
+
+      if (diff.inSeconds < 60) {
+        return 'Just now';
+      } else if (diff.inMinutes < 60) {
+        return '${diff.inMinutes}m ago';
+      } else if (diff.inHours < 24) {
+        return '${diff.inHours}h ago';
+      } else if (diff.inDays < 7) {
+        return '${diff.inDays}d ago';
+      } else {
+        return "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+      }
+    } catch (e) {
+      return 'Just now';
+    }
+  }
+
   Future<void> _loadInitialData() async {
     final api = ApiMobile.fromContext(context);
     final highlightId = widget.highlight.id.toString();
@@ -110,65 +154,83 @@ class _HighlightDetailPageState extends State<HighlightDetailPage> {
     final highlightId = widget.highlight.id.toString();
     final text = _commentController.text.trim();
 
-Future<void> _deleteComment(int commentId) async {
-  final api = ApiMobile.fromContext(context);
-
-  final res = await api.deleteComment(commentId: commentId);
-  if (!res['ok']) return;
-
-  setState(() {
-    _comments.removeWhere((c) => c['id'] == commentId);
-    _commentsCount -= 1;
-  });
-}
-
-Future<void> _confirmDelete(int commentId) async {
-  final ok = await showDialog<bool>(
-    context: context,
-    builder: (_) => AlertDialog(
-      title: const Text("Delete comment?"),
-      content: const Text("This action cannot be undone."),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: const Text("Cancel"),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(context, true),
-          style: TextButton.styleFrom(foregroundColor: Colors.red),
-          child: const Text("Delete"),
-        ),
-      ],
-    ),
-  );
-
-  if (ok == true) {
-    _deleteComment(commentId);
-  }
-}
-
-
-
-Future<void> _sendComment() async {
-  final api = ApiMobile.fromContext(context);
-  final highlightId = widget.highlight.id.toString();
-  final text = _commentController.text.trim();
+    if (text.isEmpty) return;
 
     final res = await api.addComment(highlightId: highlightId, content: text);
     if (!res['ok']) return;
 
     final data = res['data'];
 
-  final data = res['data'];
+    // PENTING: Perbaikan Data Lokal
+    // 1. Paksa 'is_owner' jadi true karena kita baru saja mengirimnya.
+    // 2. Gunakan waktu sekarang (DateTime.now()) agar langsung muncul "Just now".
+    // 3. Handle avatar: gunakan dari response, kalau null cari dari history user.
 
-  setState(() {
-    _comments.insert(0, {
-      'id': data['id'],
-      'user': data['user'],
-      'content': data['content'],
-      'created_at': data['created_at'],
-      'avatar': data['avatar'], 
+    // Mencoba mencari avatar user dari komentar sebelumnya (jika ada) untuk fallback
+    String? userAvatar = data['avatar'];
+    if (userAvatar == null || userAvatar.isEmpty) {
+      try {
+        final existingComment = _comments.firstWhere(
+          (c) => c['user'] == data['user'],
+          orElse: () => {},
+        );
+        if (existingComment.isNotEmpty) {
+          userAvatar = existingComment['avatar'];
+        }
+      } catch (_) {}
+    }
+
+    setState(() {
+      _comments.insert(0, {
+        'id': data['id'],
+        'user': data['user'],
+        'content': data['content'],
+        // FIX TIMESTAMP: Gunakan waktu lokal saat ini
+        'created_at': DateTime.now().toIso8601String(),
+        'avatar': userAvatar,
+        // FIX DELETE BUTTON: Paksa true
+        'is_owner': true,
+      });
+      _commentsCount += 1;
+      _commentController.clear();
     });
+  }
+
+  Future<void> _deleteComment(int commentId) async {
+    final api = ApiMobile.fromContext(context);
+
+    final res = await api.deleteComment(commentId: commentId);
+    if (!res['ok']) return;
+
+    setState(() {
+      _comments.removeWhere((c) => c['id'] == commentId);
+      _commentsCount -= 1;
+    });
+  }
+
+  Future<void> _confirmDelete(int commentId) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Delete comment?"),
+        content: const Text("This action cannot be undone."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text("Delete"),
+          ),
+        ],
+      ),
+    );
+
+    if (ok == true) {
+      _deleteComment(commentId);
+    }
   }
 
   Future<void> _toggleFavorite() async {
@@ -190,6 +252,10 @@ Future<void> _sendComment() async {
       highlightId: widget.highlight.id.toString(),
       rating: rating,
     );
+
+    setState(() {
+      _userRating = rating;
+    });
 
     if (mounted) {
       ScaffoldMessenger.of(
@@ -357,9 +423,7 @@ Future<void> _sendComment() async {
         elevation: 0,
         title: Padding(
           padding: const EdgeInsets.only(left: 16.0),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-          ),
+          child: Row(mainAxisSize: MainAxisSize.min),
         ),
       ),
       body: SingleChildScrollView(
@@ -367,7 +431,6 @@ Future<void> _sendComment() async {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 1. THE VIDEO PLAYER
-            // Removed BoxConstraints for Web to allow full width expansion
             Container(
               width: double.infinity,
               alignment: Alignment.center,
@@ -380,6 +443,7 @@ Future<void> _sendComment() async {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // --- HEADER HIGHLIGHT & ACTIONS ---
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -586,57 +650,6 @@ Future<void> _sendComment() async {
                               ),
                               child: const Text("Send"),
                             ),
-
-                            const SizedBox(height: 24),
-
-                            // Empty State
-                    if (_comments.isEmpty)
-                      const Center(child: Text("No comments yet.", style: TextStyle(color: Colors.grey)))
-                    else
-                      Column(
-                        children: _comments.map((c) {
-                          print(c['avatar']);
-                          return ListTile(
-                          leading: CircleAvatar(
-                            radius: 18,
-                            backgroundColor: const Color(0xFF374151),
-                            child: ClipOval(
-                              child: Image.network(
-                                c['avatar'],
-                                width: 36,
-                                height: 36,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) =>
-                                    const Icon(Icons.person, color: Colors.white, size: 18),
-                              ),
-                            ),
-                          ),
-
-                          title:  Text(
-                            c['user'],
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                          subtitle: Text(
-                            c['content'],
-                            style: const TextStyle(color: Colors.grey),
-                          ),
-
-                        trailing: c['is_owner'] == true ? GestureDetector(
-                        onTap: () => _confirmDelete(c['id']),
-                        child: const Text(
-                          "Delete",
-                          style: TextStyle(
-                            color: Colors.redAccent,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ) : null,
-                        );
-
-                        }).toList(),
-                      ),
-
-                            const SizedBox(height: 8),
                           ],
                         ),
 
@@ -652,19 +665,75 @@ Future<void> _sendComment() async {
                         else
                           Column(
                             children: _comments.map((c) {
-                              return ListTile(
-                                title: Text(
-                                  c['user'],
-                                  style: const TextStyle(color: Colors.white),
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8.0,
                                 ),
-                                subtitle: Text(
-                                  c['content'],
-                                  style: const TextStyle(color: Colors.grey),
+                                child: ListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  leading: CircleAvatar(
+                                    radius: 18,
+                                    backgroundColor: const Color(0xFF374151),
+                                    child: ClipOval(
+                                      child: Image.network(
+                                        _getAvatarUrl(c['avatar']),
+                                        width: 36,
+                                        height: 36,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (ctx, _, __) =>
+                                            const Icon(
+                                              Icons.person,
+                                              color: Colors.white,
+                                              size: 18,
+                                            ),
+                                      ),
+                                    ),
+                                  ),
+                                  title: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        c['user'] ?? 'Unknown',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        _timeAgo(c['created_at']),
+                                        style: TextStyle(
+                                          color: Colors.grey[500],
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  subtitle: Padding(
+                                    padding: const EdgeInsets.only(top: 4.0),
+                                    child: Text(
+                                      c['content'] ?? '',
+                                      style: TextStyle(
+                                        color: Colors.grey[300],
+                                        height: 1.3,
+                                      ),
+                                    ),
+                                  ),
+                                  trailing: (c['is_owner'] == true)
+                                      ? GestureDetector(
+                                          onTap: () => _confirmDelete(c['id']),
+                                          child: const Icon(
+                                            Icons.delete_outline,
+                                            color: Colors.redAccent,
+                                            size: 20,
+                                          ),
+                                        )
+                                      : null,
                                 ),
                               );
                             }).toList(),
                           ),
-                        const SizedBox(height: 8),
                       ],
                     ),
                   ),
@@ -695,7 +764,7 @@ Future<void> _sendComment() async {
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       child: Row(
         children: [
-          Expanded(flex: 3, child: Text(isHeader ? col1 : col1, style: style)),
+          Expanded(flex: 3, child: Text(col1, style: style)),
           Expanded(
             child: Center(child: Text(col2, style: style)),
           ),
