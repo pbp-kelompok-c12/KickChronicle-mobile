@@ -51,6 +51,7 @@ class TopRatedCard extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min, 
           children: [
             AspectRatio(
               aspectRatio: 16 / 9,

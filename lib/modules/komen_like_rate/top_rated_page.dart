@@ -17,6 +17,7 @@ class _TopRatedPageState extends State<TopRatedPage> {
   DateTime _selectedDate = DateTime.now();
   List<Highlight> _highlights = [];
   bool _loading = true;
+  bool _useDateFilter = false;
 
   @override
   void initState() {
@@ -27,8 +28,18 @@ class _TopRatedPageState extends State<TopRatedPage> {
   Future<void> _fetchTopRated() async {
     setState(() => _loading = true);
     final api = ApiMobile.fromContext(context);
-    final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
-    final res = await api.getTopRated(startDate: dateStr, endDate: dateStr);
+
+    Map<String, dynamic> res;
+
+    if (_useDateFilter) {
+      final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
+      res = await api.getTopRated(
+        startDate: dateStr,
+        endDate: dateStr,
+      );
+    } else {
+      res = await api.getTopRated();
+    }
 
     if (!mounted) return;
 
@@ -43,9 +54,11 @@ class _TopRatedPageState extends State<TopRatedPage> {
     }
   }
 
+
   void _navigateDate(int direction) {
     setState(() {
       _selectedDate = _selectedDate.add(Duration(days: direction));
+      _useDateFilter = true; 
     });
     _fetchTopRated();
   }
@@ -76,17 +89,21 @@ class _TopRatedPageState extends State<TopRatedPage> {
     );
 
     if (picked != null) {
-      setState(() => _selectedDate = picked);
+      setState(() {
+      _useDateFilter = true;
+         _selectedDate = picked;
+      });
       _fetchTopRated();
     }
   }
 
-  double _gridRatio(BuildContext context) {
-    final w = MediaQuery.of(context).size.width;
-    if (w < 600) return 1.05;
-    if (w < 1200) return 1.1;
-    return 1.15;
-  }
+double _gridRatio(BuildContext context) {
+  final w = MediaQuery.of(context).size.width;
+  if (w < 600) return 0.9;     // mobile
+  if (w < 1200) return 0.85;    // tablet
+  return 0.9;                  // desktop
+}
+
 
   @override
   Widget build(BuildContext context) {
