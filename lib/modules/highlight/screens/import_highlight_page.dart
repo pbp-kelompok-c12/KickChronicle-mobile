@@ -1,10 +1,10 @@
-import 'dart:convert'; // For jsonDecode if response is string
-import 'dart:io'; // Not needed for web/bytes based upload usually, but good for File(path)
+import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
-import 'package:http/http.dart' as http; // pbp_django_auth uses http internally, but we might need multipart request support
+import 'package:http/http.dart' as http;
 
 class ImportHighlightPage extends StatefulWidget {
   const ImportHighlightPage({super.key});
@@ -21,7 +21,7 @@ class _ImportHighlightPageState extends State<ImportHighlightPage> {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['csv'],
-      withData: true, // Important for web/cross-platform byte access
+      withData: true, // Crucial for Web access to bytes
     );
 
     if (result != null) {
@@ -39,37 +39,41 @@ class _ImportHighlightPageState extends State<ImportHighlightPage> {
     });
 
     final request = context.read<CookieRequest>();
-    const url = 'http://127.0.0.1:8000/add-highlights-csv-flutter/';
+
+    // --- FIX 1: URL CONSISTENCY ---
+    // If you run your Flutter app on 'localhost', you MUST send requests to 'localhost'.
+    // If you send them to '127.0.0.1', the browser will BLOCK your cookies.
+    String url;
+    if (kIsWeb) {
+      url = 'http://127.0.0.1:8000/add-highlights-csv-flutter/';
+    } else {
+      url = 'http://127.0.0.1:8000/add-highlights-csv-flutter/';
+    }
 
     try {
-      // pbp_django_auth might not have a direct multipart/form-data helper convenient for files.
-      // However, it's often easier to use the underlying http package or construct it manually
-      // if the library doesn't support file upload directly.
-      //
-      // Assuming pbp_django_auth's CookieRequest doesn't block us from accessing cookies,
-      // we can construct a MultipartRequest manually but we need the cookies.
-      //
-      // ALTERNATIVE: Since pbp_django_auth wraps http, let's try to see if we can use its client
-      // or just standard http.post with manual cookie handling if needed.
-      // But for simplicity in this snippet, let's assume we can use a standard MultipartRequest
-      // and if pbp_django_auth is needed for session, we might need a workaround.
-
-      // Let's try creating a Multipart request using the 'http' package which pbp_django_auth is based on.
-      // But we need to ensure session cookies are passed if authentication was required (you said admin check not needed for now).
-
-      // Since authentication is NOT required for this specific view (per your request), standard http is fine.
-
-      // NOTE: You need to add 'http' to pubspec.yaml if not already there,
-      // but pbp_django_auth depends on it so it should be available.
-
-      // We will use the request.postUrl (which expects json) or similar? No, that won't work for files.
-      // We have to implement a custom multipart upload here.
-
       var uri = Uri.parse(url);
       var multipartRequest = http.MultipartRequest("POST", uri);
 
-      // Add the file
-      // On web/mobile, use bytes.
+      // --- FIX 2: HANDLE COOKIES CORRECTLY ---
+      if (kIsWeb) {
+        // On Web, the browser handles cookies automatically IF the domains match.
+        // We do NOT manually add headers here because it triggers a security error.
+        // Ensure your Django settings.py has:
+        // CORS_ALLOW_CREDENTIALS = True
+        // CORS_ALLOWED_ORIGINS = ["http://localhost:YOUR_FLUTTER_PORT"]
+      } else {
+        // Mobile logic (Keep this as it was working for mobile)
+        Map<String, String> headers = Map.from(request.headers);
+        if (request.cookies.isNotEmpty) {
+          String cookieHeader = request.cookies.entries
+              .map((e) => '${e.key}=${e.value}')
+              .join('; ');
+          headers['cookie'] = cookieHeader;
+        }
+        multipartRequest.headers.addAll(headers);
+      }
+
+      // Add File
       if (_pickedFile!.bytes != null) {
         multipartRequest.files.add(
             http.MultipartFile.fromBytes(
@@ -79,7 +83,6 @@ class _ImportHighlightPageState extends State<ImportHighlightPage> {
             )
         );
       } else if (_pickedFile!.path != null) {
-        // Fallback for mobile if bytes are null (though withData: true usually populates bytes on web, path on mobile)
         multipartRequest.files.add(
             await http.MultipartFile.fromPath(
               'csv_file',
@@ -91,40 +94,44 @@ class _ImportHighlightPageState extends State<ImportHighlightPage> {
       var streamResponse = await multipartRequest.send();
       var response = await http.Response.fromStream(streamResponse);
 
-      if (response.statusCode == 201) {
+      if (response.statusCode == 201 || response.statusCode == 200) {
         if (mounted) {
+          final resJson = jsonDecode(response.body);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Import successful!")),
+            SnackBar(content: Text(resJson['message']), backgroundColor: Colors.green),
           );
-          Navigator.pop(context, true); // Return success
+          Navigator.pop(context, true);
         }
       } else {
         if (mounted) {
-          // Parse error message
+          // DEBUGGING: Print the HTML to console if it fails again
+          print("SERVER RESPONSE: ${response.body}");
+
+          String errorMessage = "Upload failed. Status: ${response.statusCode}";
           try {
-            final resJson = jsonDecode(response.body);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text("Error: ${resJson['message']}")),
-            );
+            final resJson = jsonDecode(response.body); // This crashes if body is HTML
+            errorMessage = resJson['message'] ?? errorMessage;
           } catch (_) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text("Upload failed. Status: ${response.statusCode}")),
-            );
+            if (response.body.contains("<!DOCTYPE html>")) {
+              errorMessage = "Login Error: Domains mismatch (localhost vs 127.0.0.1)";
+            }
           }
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
+          );
         }
       }
 
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: $e")),
+          SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
         );
       }
     } finally {
       if (mounted) {
-        setState(() {
-          _isUploading = false;
-        });
+        setState(() { _isUploading = false; });
       }
     }
   }
@@ -158,7 +165,6 @@ class _ImportHighlightPageState extends State<ImportHighlightPage> {
               ),
               const SizedBox(height: 12),
 
-              // File Picker Row
               Row(
                 children: [
                   ElevatedButton(
@@ -182,18 +188,18 @@ class _ImportHighlightPageState extends State<ImportHighlightPage> {
 
               const SizedBox(height: 8),
               const Text(
-                "Header row: Name, URL, Description, Manual Thumbnail URL (optional), Season (e.g. 2024/2025)",
+                "Header row required: Name, URL, Description, Manual Thumbnail URL, Season",
                 style: TextStyle(color: Colors.grey, fontSize: 12, fontStyle: FontStyle.italic),
               ),
 
               const SizedBox(height: 24),
 
               SizedBox(
-                width: double.infinity, // Full width button
+                width: double.infinity,
                 child: ElevatedButton(
                   onPressed: (_pickedFile != null && !_isUploading) ? _uploadFile : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4F46E5), // Blue accent
+                    backgroundColor: const Color(0xFF4F46E5),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(6),
