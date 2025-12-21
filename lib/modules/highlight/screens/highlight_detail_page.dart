@@ -110,22 +110,64 @@ class _HighlightDetailPageState extends State<HighlightDetailPage> {
     final highlightId = widget.highlight.id.toString();
     final text = _commentController.text.trim();
 
-    if (text.isEmpty) return;
+Future<void> _deleteComment(int commentId) async {
+  final api = ApiMobile.fromContext(context);
+
+  final res = await api.deleteComment(commentId: commentId);
+  if (!res['ok']) return;
+
+  setState(() {
+    _comments.removeWhere((c) => c['id'] == commentId);
+    _commentsCount -= 1;
+  });
+}
+
+Future<void> _confirmDelete(int commentId) async {
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (_) => AlertDialog(
+      title: const Text("Delete comment?"),
+      content: const Text("This action cannot be undone."),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text("Cancel"),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, true),
+          style: TextButton.styleFrom(foregroundColor: Colors.red),
+          child: const Text("Delete"),
+        ),
+      ],
+    ),
+  );
+
+  if (ok == true) {
+    _deleteComment(commentId);
+  }
+}
+
+
+
+Future<void> _sendComment() async {
+  final api = ApiMobile.fromContext(context);
+  final highlightId = widget.highlight.id.toString();
+  final text = _commentController.text.trim();
 
     final res = await api.addComment(highlightId: highlightId, content: text);
     if (!res['ok']) return;
 
     final data = res['data'];
 
-    setState(() {
-      _comments.insert(0, {
-        'id': data['id'],
-        'user': data['user'],
-        'content': data['content'],
-        'created_at': data['created_at'],
-      });
-      _commentsCount += 1;
-      _commentController.clear();
+  final data = res['data'];
+
+  setState(() {
+    _comments.insert(0, {
+      'id': data['id'],
+      'user': data['user'],
+      'content': data['content'],
+      'created_at': data['created_at'],
+      'avatar': data['avatar'], 
     });
   }
 
@@ -589,6 +631,57 @@ class _HighlightDetailPageState extends State<HighlightDetailPage> {
                               ),
                               child: const Text("Send"),
                             ),
+
+                            const SizedBox(height: 24),
+
+                            // Empty State
+                    if (_comments.isEmpty)
+                      const Center(child: Text("No comments yet.", style: TextStyle(color: Colors.grey)))
+                    else
+                      Column(
+                        children: _comments.map((c) {
+                          print(c['avatar']);
+                          return ListTile(
+                          leading: CircleAvatar(
+                            radius: 18,
+                            backgroundColor: const Color(0xFF374151),
+                            child: ClipOval(
+                              child: Image.network(
+                                c['avatar'],
+                                width: 36,
+                                height: 36,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) =>
+                                    const Icon(Icons.person, color: Colors.white, size: 18),
+                              ),
+                            ),
+                          ),
+
+                          title:  Text(
+                            c['user'],
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          subtitle: Text(
+                            c['content'],
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+
+                        trailing: c['is_owner'] == true ? GestureDetector(
+                        onTap: () => _confirmDelete(c['id']),
+                        child: const Text(
+                          "Delete",
+                          style: TextStyle(
+                            color: Colors.redAccent,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ) : null,
+                        );
+
+                        }).toList(),
+                      ),
+
+                            const SizedBox(height: 8),
                           ],
                         ),
 
