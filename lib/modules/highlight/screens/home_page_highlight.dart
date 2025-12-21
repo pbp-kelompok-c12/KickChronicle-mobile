@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kick_chronicle/models/highlight.dart';
 import 'package:kick_chronicle/services/highlight_service.dart';
 import 'package:kick_chronicle/modules/highlight/widgets/match_card.dart';
+import 'package:kick_chronicle/utils/constants.dart';
 import 'package:kick_chronicle/widgets/left_drawer.dart';
 import 'package:provider/provider.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
@@ -66,7 +67,7 @@ class _HomePageHighlightState extends State<HomePageHighlight> {
 
     // NOTE: Replace this URL with your actual endpoint to check user role
     // If you haven't built this endpoint yet, you need to add it to your Django views.
-    String url = kIsWeb ? "http://127.0.0.1:8000/auth/check-superuser/" : "http://10.0.2.2:8000/auth/check-superuser/";
+    final String url = "${ApiConfig.baseUrl}/auth/check-superuser/";
 
     try {
       // Trying to fetch user info.
@@ -85,7 +86,7 @@ class _HomePageHighlightState extends State<HomePageHighlight> {
 
   // --- LOGOUT LOGIC ---
   Future<void> _handleLogout(BuildContext context, CookieRequest request) async {
-    String baseUrl = kIsWeb ? "http://127.0.0.1:8000" : "http://10.0.2.2:8000";
+    String baseUrl = ApiConfig.baseUrl;
     String logoutUrl = "$baseUrl/auth/mobile/logout/";
 
     try {
@@ -183,7 +184,8 @@ class _HomePageHighlightState extends State<HomePageHighlight> {
 
   Future<void> _deleteHighlight(Highlight highlight) async {
     final request = context.read<CookieRequest>();
-    final url = 'http://127.0.0.1:8000/delete-highlight-flutter/${highlight.id}/';
+    final url =
+        "${ApiConfig.baseUrl}/delete-highlight-flutter/${highlight.id}/";
     try {
       final response = await request.post(url, {});
       if (response['status'] == 'success') {

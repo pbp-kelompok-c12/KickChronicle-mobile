@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kick_chronicle/utils/constants.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -28,7 +29,7 @@ class _HomePageState extends State<HomePage> {
   // Ambil data profil dari Django untuk mendapatkan URL foto
   Future<void> _fetchProfileImage() async {
     final request = context.read<CookieRequest>();
-    String baseUrl = kIsWeb ? "http://127.0.0.1:8000" : "http://10.0.2.2:8000";
+    String baseUrl = ApiConfig.baseUrl;
     String url = "$baseUrl/auth/mobile/profile/";
 
     try {
@@ -62,9 +63,7 @@ class _HomePageState extends State<HomePage> {
   ImageProvider _getNavbarImage() {
     // 1. Prioritas: Foto dari Django
     if (_profileImageUrl != null && _profileImageUrl!.isNotEmpty) {
-      String baseUrl = kIsWeb
-          ? "http://127.0.0.1:8000"
-          : "http://10.0.2.2:8000";
+      String baseUrl = ApiConfig.baseUrl;
       return NetworkImage("$baseUrl/media/$_profileImageUrl");
     }
     // 2. Foto Google
@@ -79,7 +78,7 @@ class _HomePageState extends State<HomePage> {
     BuildContext context,
     CookieRequest request,
   ) async {
-    String baseUrl = kIsWeb ? "http://127.0.0.1:8000" : "http://10.0.2.2:8000";
+    String baseUrl = ApiConfig.baseUrl;
     String logoutUrl = "$baseUrl/auth/mobile/logout/";
 
     try {

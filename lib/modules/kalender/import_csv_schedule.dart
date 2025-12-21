@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:kick_chronicle/utils/constants.dart';
 import 'dart:convert';
 import 'package:universal_io/io.dart';
 import 'package:provider/provider.dart'; 
@@ -17,9 +18,7 @@ class _ImportCsvSchedulePageState extends State<ImportCsvSchedulePage> {
   String? _fileName;
   String? _csvContent;
 
-  final String baseHost = (kIsWeb || defaultTargetPlatform == TargetPlatform.iOS)
-      ? "http://127.0.0.1:8000"
-      : "http://10.0.2.2:8000";
+  final String baseHost = ApiConfig.baseUrl;
 
   Future<void> _pickCsv() async {
     try {

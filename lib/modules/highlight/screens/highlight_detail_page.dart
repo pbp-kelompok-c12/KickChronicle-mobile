@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kick_chronicle/models/highlight.dart';
+import 'package:kick_chronicle/utils/constants.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart' as mobile;
 import 'package:youtube_player_iframe/youtube_player_iframe.dart' as iframe;
 import 'package:kick_chronicle/services/komen_like_service.dart';
@@ -74,15 +75,23 @@ class _HighlightDetailPageState extends State<HighlightDetailPage> {
     }
   }
 
-  // --- HELPER 1: CACHE BUSTING UNTUK AVATAR ---
   String _getAvatarUrl(String? url) {
     if (url == null || url.isEmpty) return '';
-    // Jika URL relative (misal /media/...), biarkan apa adanya atau tambahkan base URL jika perlu
-    // Di sini kita asumsikan URL valid, kita hanya tambah timestamp cache busting
-    if (url.contains('?')) {
-      return "$url&v=${DateTime.now().millisecondsSinceEpoch}";
+
+    String finalUrl = url;
+
+    if (!url.startsWith('http')) {
+      if (url.startsWith('/')) {
+        finalUrl = "${ApiConfig.baseUrl}$url";
+      } else {
+        finalUrl = "${ApiConfig.baseUrl}/$url";
+      }
     }
-    return "$url?v=${DateTime.now().millisecondsSinceEpoch}";
+
+    if (finalUrl.contains('?')) {
+      return "$finalUrl&v=${DateTime.now().millisecondsSinceEpoch}";
+    }
+    return "$finalUrl?v=${DateTime.now().millisecondsSinceEpoch}";
   }
 
   // --- HELPER 2: RELATIVE TIME (FIXED TIMEZONE BUG) ---

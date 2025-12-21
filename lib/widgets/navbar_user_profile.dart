@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kick_chronicle/utils/constants.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -29,7 +30,7 @@ class _NavbarUserProfileState extends State<NavbarUserProfile> {
     if (!mounted) return;
 
     final request = context.read<CookieRequest>();
-    String baseUrl = kIsWeb ? "http://127.0.0.1:8000" : "http://10.0.2.2:8000";
+    String baseUrl = ApiConfig.baseUrl;
     String url = "$baseUrl/auth/mobile/profile/";
 
     try {
@@ -62,9 +63,7 @@ class _NavbarUserProfileState extends State<NavbarUserProfile> {
 
   ImageProvider _getNavbarImage() {
     if (_djangoProfileImageUrl != null && _djangoProfileImageUrl!.isNotEmpty) {
-      String baseUrl = kIsWeb
-          ? "http://127.0.0.1:8000"
-          : "http://10.0.2.2:8000";
+      String baseUrl = ApiConfig.baseUrl;
       return NetworkImage(
         "$baseUrl$_djangoProfileImageUrl?v=${DateTime.now().millisecondsSinceEpoch}",
       );
@@ -77,7 +76,7 @@ class _NavbarUserProfileState extends State<NavbarUserProfile> {
 
   void _handleLogout(BuildContext context) async {
     final request = context.read<CookieRequest>();
-    String baseUrl = kIsWeb ? "http://127.0.0.1:8000" : "http://10.0.2.2:8000";
+    String baseUrl = ApiConfig.baseUrl;
 
     try {
       final GoogleSignIn googleSignIn = GoogleSignIn(

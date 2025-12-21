@@ -1,7 +1,5 @@
 import 'dart:convert';
-
 import 'package:pbp_django_auth/pbp_django_auth.dart';
-
 import 'package:kick_chronicle/models/standing.dart';
 import 'package:kick_chronicle/utils/constants.dart';
 

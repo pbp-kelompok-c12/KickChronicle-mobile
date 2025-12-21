@@ -3,6 +3,7 @@ import 'package:kick_chronicle/models/highlight.dart';
 import 'package:kick_chronicle/modules/highlight/widgets/favorited_card.dart';
 import 'package:kick_chronicle/modules/highlight/widgets/match_card.dart';
 import 'package:kick_chronicle/services/komen_like_service.dart';
+import 'package:kick_chronicle/utils/constants.dart';
 import 'package:kick_chronicle/widgets/left_drawer.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:provider/provider.dart';
@@ -48,9 +49,7 @@ class _FavoritedPageState extends State<FavoritedPage> {
 
   Future<void> _checkAdminStatus() async {
     final request = context.read<CookieRequest>();
-    String url = kIsWeb
-        ? "http://127.0.0.1:8000/auth/check-superuser/"
-        : "http://10.0.2.2:8000/auth/check-superuser/";
+    String url = ApiConfig.baseUrl;
 
     try {
       final response = await request.get(url);
@@ -63,7 +62,7 @@ class _FavoritedPageState extends State<FavoritedPage> {
   Future<void> _handleLogout() async {
     final request = context.read<CookieRequest>();
 
-    String baseUrl = kIsWeb ? "http://127.0.0.1:8000" : "http://10.0.2.2:8000";
+    String baseUrl = ApiConfig.baseUrl;
     String logoutUrl = "$baseUrl/auth/mobile/logout/";
 
     try {

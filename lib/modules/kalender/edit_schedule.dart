@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:kick_chronicle/utils/constants.dart';
 import 'package:provider/provider.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:kick_chronicle/models/calendar_model.dart'; 
@@ -135,7 +136,7 @@ class _EditSchedulePageState extends State<EditSchedulePage> {
     
     final matchId = widget.matchToEdit.id!; 
 
-    String baseUrl = kIsWeb ? "http://127.0.0.1:8000" : "http://10.0.2.2:8000";
+    String baseUrl = ApiConfig.baseUrl;
     String editMatchUrl = '$baseUrl/kalender/edit/$matchId/';
     
     final response = await request.post(
