@@ -87,6 +87,45 @@ class _HighlightDetailPageState extends State<HighlightDetailPage> {
 }
 
 
+Future<void> _deleteComment(int commentId) async {
+  final api = ApiMobile.fromContext(context);
+
+  final res = await api.deleteComment(commentId: commentId);
+  if (!res['ok']) return;
+
+  setState(() {
+    _comments.removeWhere((c) => c['id'] == commentId);
+    _commentsCount -= 1;
+  });
+}
+
+Future<void> _confirmDelete(int commentId) async {
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (_) => AlertDialog(
+      title: const Text("Delete comment?"),
+      content: const Text("This action cannot be undone."),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text("Cancel"),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, true),
+          style: TextButton.styleFrom(foregroundColor: Colors.red),
+          child: const Text("Delete"),
+        ),
+      ],
+    ),
+  );
+
+  if (ok == true) {
+    _deleteComment(commentId);
+  }
+}
+
+
+
 Future<void> _sendComment() async {
   final api = ApiMobile.fromContext(context);
   final highlightId = widget.highlight.id.toString();
@@ -105,6 +144,7 @@ Future<void> _sendComment() async {
       'user': data['user'],
       'content': data['content'],
       'created_at': data['created_at'],
+      'avatar': data['avatar'], 
     });
     _commentsCount += 1;
     _commentController.clear();
@@ -513,10 +553,44 @@ Future<int?> _showRatingDialog() async {
                     else
                       Column(
                         children: _comments.map((c) {
+                          print(c['avatar']);
                           return ListTile(
-                            title: Text(c['user'], style: const TextStyle(color: Colors.white)),
-                            subtitle: Text(c['content'], style: const TextStyle(color: Colors.grey)),
-                          );
+                          leading: CircleAvatar(
+                            radius: 18,
+                            backgroundColor: const Color(0xFF374151),
+                            child: ClipOval(
+                              child: Image.network(
+                                c['avatar'],
+                                width: 36,
+                                height: 36,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) =>
+                                    const Icon(Icons.person, color: Colors.white, size: 18),
+                              ),
+                            ),
+                          ),
+
+                          title:  Text(
+                            c['user'],
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          subtitle: Text(
+                            c['content'],
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+
+                        trailing: c['is_owner'] == true ? GestureDetector(
+                        onTap: () => _confirmDelete(c['id']),
+                        child: const Text(
+                          "Delete",
+                          style: TextStyle(
+                            color: Colors.redAccent,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ) : null,
+                        );
+
                         }).toList(),
                       ),
 
