@@ -1,13 +1,20 @@
+import 'dart:io';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:kick_chronicle/models/calendar_model.dart';
 import 'package:intl/intl.dart';
 import 'package:kick_chronicle/utils/constants.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:provider/provider.dart';
+import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 class DetailSchedulePage extends StatelessWidget {
   final Match match;
   const DetailSchedulePage({super.key, required this.match});
+
   String get baseHost => ApiConfig.baseUrl;
   String get icsBaseUrl => "${ApiConfig.baseUrl}/kalender/export/";
 
@@ -19,14 +26,67 @@ class DetailSchedulePage extends StatelessWidget {
       return;
     }
 
-    final url = Uri.parse('$icsBaseUrl${match.id!}/');
+    final urlString = '$icsBaseUrl${match.id!}/';
 
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-    } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Gagal membuka URL ekspor: $url')));
+    if (kIsWeb) {
+      final url = Uri.parse(urlString);
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Gagal membuka URL ekspor: $urlString')),
+          );
+        }
+      }
+      return;
+    }
+
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Sedang mengunduh jadwal...")),
+      );
+
+      final request = context.read<CookieRequest>();
+
+      final response = await http.get(
+        Uri.parse(urlString),
+        headers: request.headers,
+      );
+
+      if (response.statusCode == 200) {
+        final directory = await getApplicationDocumentsDirectory();
+        final filePath = '${directory.path}/schedule_${match.id}.ics';
+        final file = File(filePath);
+
+        await file.writeAsBytes(response.bodyBytes);
+
+        final result = await OpenFilex.open(filePath);
+
+        if (result.type != ResultType.done) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text("Gagal membuka kalender: ${result.message}"),
+              ),
+            );
+          }
+        }
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Gagal mengunduh. Status: ${response.statusCode}"),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Terjadi kesalahan: $e")));
+      }
     }
   }
 

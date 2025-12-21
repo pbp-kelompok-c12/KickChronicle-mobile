@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:kick_chronicle/modules/auth_profil/screens/profile_page.dart';
 import 'package:kick_chronicle/modules/auth_profil/screens/login_page.dart';
 import 'package:kick_chronicle/modules/komen_like_rate/favorited_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class NavbarUserProfile extends StatefulWidget {
   const NavbarUserProfile({super.key});
@@ -45,8 +46,6 @@ class _NavbarUserProfileState extends State<NavbarUserProfile> {
 
   Future<void> _checkGooglePhoto() async {
     final GoogleSignIn googleSignIn = GoogleSignIn(
-      clientId:
-          '935238606733-r2o3ii14m8ns65r9all4d0jcst0s3rld.apps.googleusercontent.com',
       scopes: ['email', 'profile'],
     );
     try {
@@ -80,8 +79,6 @@ class _NavbarUserProfileState extends State<NavbarUserProfile> {
 
     try {
       final GoogleSignIn googleSignIn = GoogleSignIn(
-        clientId:
-            '935238606733-r2o3ii14m8ns65r9all4d0jcst0s3rld.apps.googleusercontent.com',
         scopes: ['email', 'profile'],
       );
       if (await googleSignIn.isSignedIn()) {
@@ -95,6 +92,8 @@ class _NavbarUserProfileState extends State<NavbarUserProfile> {
       if (context.mounted) {
         if (response['status']) {
           String uname = response['username'] ?? "User";
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.clear();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text("$message Sampai jumpa, $uname."),

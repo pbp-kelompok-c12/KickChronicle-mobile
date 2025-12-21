@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:kick_chronicle/modules/auth_profil/screens/register_page.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:kick_chronicle/modules/auth_profil/screens/forgot_password_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -22,16 +23,13 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
 
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    clientId:
-        '935238606733-r2o3ii14m8ns65r9all4d0jcst0s3rld.apps.googleusercontent.com',
-    scopes: ['email', 'profile'],
-  );
+  // ✅ PERBAIKAN 1: Hapus clientId agar tidak bentrok di Android
+  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
 
   @override
   void initState() {
     super.initState();
-    // Kode ini aman karena signInSilently ada di library standar
+    // Listener ini hanya aktif di Web, aman untuk Mobile
     if (kIsWeb) {
       _googleSignIn.onCurrentUserChanged.listen((GoogleSignInAccount? account) {
         if (account != null) {
@@ -51,8 +49,8 @@ class _LoginPageState extends State<LoginPage> {
       final GoogleSignInAuthentication auth = await account.authentication;
       String baseUrl = ApiConfig.baseUrl;
 
-      // Gunakan endpoint flutter yang sudah kita siapkan
-      String url = "$baseUrl/auth/google-login-flutter/";
+      // Gunakan endpoint khusus flutter
+      String url = "$baseUrl/auth/mobile/google-login/";
 
       final response = await request.postJson(
         url,
@@ -60,12 +58,15 @@ class _LoginPageState extends State<LoginPage> {
           'email': account.email,
           'id_token': auth.idToken ?? "",
           'access_token': auth.accessToken ?? "",
-          'photoUrl': account.photoUrl ?? "", 
+          'photoUrl': account.photoUrl ?? "", // Kirim foto profil
         }),
       );
 
       if (mounted) {
         if (response['status'] == true) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setBool('is_logged_in', true);
+          await prefs.setString('username', response['username']);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text("Selamat datang, ${response['username']}!")),
           );
@@ -77,6 +78,7 @@ class _LoginPageState extends State<LoginPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text("Gagal login: ${response['message']}")),
           );
+          // Logout jika gagal di backend
           _googleSignIn.disconnect();
         }
       }
@@ -91,10 +93,10 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  // --- LOGIKA: Handle Klik Google (Mobile & Web) ---
-  // Fungsi ini bisa dipakai di Mobile maupun Web (Pop-up)
+  // --- LOGIKA: Handle Klik Tombol Google ---
   Future<void> _handleGoogleSignIn() async {
     try {
+      // Ini akan memicu pop-up pilih akun
       final GoogleSignInAccount? account = await _googleSignIn.signIn();
       if (account != null) {
         await _handleGoogleLoginResult(account);
@@ -104,7 +106,7 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  // --- LOGIKA: Handle Login Manual ---
+  // --- LOGIKA: Handle Login Manual (Username/Pass) ---
   Future<void> _handleManualLogin() async {
     setState(() => _isLoading = true);
     final request = context.read<CookieRequest>();
@@ -119,6 +121,9 @@ class _LoginPageState extends State<LoginPage> {
 
       if (request.loggedIn) {
         if (mounted) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setBool('is_logged_in', true);
+          await prefs.setString('username', _usernameController.text);
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(const SnackBar(content: Text("Login berhasil!")));
@@ -158,7 +163,7 @@ class _LoginPageState extends State<LoginPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // 1. Logo / Judul
+              // Logo & Judul
               Container(
                 height: 80,
                 width: 80,
@@ -197,7 +202,7 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 40),
 
-              // 2. Form Input
+              // Form Input
               _buildTextField(
                 controller: _usernameController,
                 label: "Username",
@@ -211,7 +216,7 @@ class _LoginPageState extends State<LoginPage> {
                 fillColor: inputFillColor,
               ),
 
-              // 3. Tombol Forgot Password
+              // Forgot Password
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
@@ -232,10 +237,9 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 20),
 
-              // 4. Tombol Login Utama
+              // Tombol Login Manual
               _isLoading
                   ? const CircularProgressIndicator()
                   : ElevatedButton(
@@ -259,7 +263,7 @@ class _LoginPageState extends State<LoginPage> {
 
               const SizedBox(height: 30),
 
-              // 5. Divider
+              // Divider
               Row(
                 children: [
                   Expanded(child: Divider(color: Colors.grey[800])),
@@ -275,10 +279,9 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 30),
 
-              // 6. Tombol Google (Universal)
-              // Kita gunakan tombol custom ini untuk Web maupun Mobile
+              // ✅ PERBAIKAN 2: Tombol Google Universal (Aman untuk Android & Web)
               OutlinedButton.icon(
-                onPressed: _handleGoogleSignIn, // Panggil fungsi yang sama
+                onPressed: _handleGoogleSignIn,
                 style: OutlinedButton.styleFrom(
                   backgroundColor: Colors.black,
                   foregroundColor: Colors.white,
@@ -301,7 +304,7 @@ class _LoginPageState extends State<LoginPage> {
 
               const SizedBox(height: 40),
 
-              // 7. Footer Register
+              // Register Link
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
