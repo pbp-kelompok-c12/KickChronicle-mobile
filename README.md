@@ -99,4 +99,4 @@ Aplikasi Flutter ini beroperasi sebagai **Client** yang sepenuhnya bergantung pa
 **Link Video:** `https://drive.google.com/file/d/1wToY5clTk2Ph2wjQULw0hJuB9hY8IJSv/view?usp=drive_link`
 
 ## Link App
-**Link App:** `https://drive.google.com/file/d/1wToY5clTk2Ph2wjQULw0hJuB9hY8IJSv/view?usp=drive_link`
+**Link App:** `https://app.bitrise.io/app/aafd2aa5-3acf-47a8-8d18-5d3a92600d74/installable-artifacts/45fefde43eeff8db/public-install-page/a17e79912152a2eb5cca3aa7c6e5e141`
